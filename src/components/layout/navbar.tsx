@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { NotificationBell } from './notification-bell';
 
 const navLinks: { href: string; label: string }[] = [];
 
@@ -31,13 +32,16 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-4 md:flex">
-          <Button asChild variant="outline">
-            <Link href="/registrasi" className="font-bold">Daftar</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/login" className="font-bold">Masuk</Link>
-          </Button>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <div className="hidden items-center gap-4 md:flex">
+            <Button asChild variant="outline">
+              <Link href="/registrasi" className="font-bold">Daftar</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/login" className="font-bold">Masuk</Link>
+            </Button>
+          </div>
         </div>
 
         <div className="md:hidden">
