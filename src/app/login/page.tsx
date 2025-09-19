@@ -1,5 +1,4 @@
 
-
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -14,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
 
-export default function MasukPage() {
+export default function LoginPage() {
   return (
     <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center px-4">
       <Card className="w-full max-w-sm">
@@ -22,7 +21,7 @@ export default function MasukPage() {
           <CardTitle className="text-2xl">Selamat Datang Kembali</CardTitle>
           <CardDescription>
             Belum punya akun?{' '}
-            <Link href="/daftar" className="font-medium text-primary hover:underline">
+            <Link href="/registrasi" className="font-medium text-primary hover:underline">
               Daftar di sini
             </Link>
           </CardDescription>

@@ -272,7 +272,7 @@ export default function Home() {
             <p className="mt-2 text-lg text-primary-foreground/90">Jadilah mitra kami dan dapatkan penghasilan tambahan dengan keahlian Anda.</p>
           </div>
           <Button asChild size="lg" variant="secondary" className="flex-shrink-0 bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-            <Link href="/daftar" className="font-bold">Daftar Jadi Mitra</Link>
+            <Link href="/registrasi" className="font-bold">Daftar Jadi Mitra</Link>
           </Button>
         </div>
       </section>
