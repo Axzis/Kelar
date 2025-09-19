@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Calendar, Tag, Star, User, DollarSign, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format, fromUnixTime } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -35,6 +35,16 @@ interface Job {
   description: string;
   photoUrl?: string;
 }
+
+// Interface untuk data penawaran
+interface Bid {
+  id: string;
+  providerName: string;
+  providerRating: number;
+  providerAvatarUrl: string;
+  reviews: number; // Placeholder, bisa ditambahkan nanti
+}
+
 
 // Objek untuk memetakan status pekerjaan ke varian warna Badge
 const statusVariant: { [key in Job['status']]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -55,40 +65,17 @@ const statusDisplay: { [key in Job['status']]: string } = {
 };
 
 
-// Data placeholder untuk daftar penawar (akan diganti nanti)
-const bidders = [
-  {
-    id: 'p1',
-    name: 'Budi Perkasa',
-    avatarUrl: 'https://picsum.photos/seed/provider1/100/100',
-    rating: 4.9,
-    reviews: 120,
-  },
-  {
-    id: 'p2',
-    name: 'CV. Jaya Konstruksi',
-    avatarUrl: 'https://picsum.photos/seed/provider2/100/100',
-    rating: 4.8,
-    reviews: 88,
-  },
-  {
-    id: 'p3',
-    name: 'Slamet Riyadi',
-    avatarUrl: 'https://picsum.photos/seed/provider3/100/100',
-    rating: 4.7,
-    reviews: 95,
-  },
-];
-
 export default function JobDetailPage({ params }: { params: { jobId: string } }) {
   const [jobDetails, setJobDetails] = useState<Job | null>(null);
+  const [bidders, setBidders] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
+  const [biddersLoading, setBiddersLoading] = useState(true);
 
   useEffect(() => {
     if (params.jobId) {
       const jobDocRef = doc(db, 'jobs', params.jobId);
       
-      const unsubscribe = onSnapshot(jobDocRef, (doc) => {
+      const unsubscribeJob = onSnapshot(jobDocRef, (doc) => {
         if (doc.exists()) {
           const data = doc.data();
           setJobDetails({ 
@@ -105,7 +92,26 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
         setLoading(false);
       });
 
-      return () => unsubscribe();
+      // Query ke sub-koleksi bids
+      const bidsQuery = query(collection(db, 'jobs', params.jobId, 'bids'));
+      const unsubscribeBids = onSnapshot(bidsQuery, (querySnapshot) => {
+        const bidsData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as Bid[];
+        setBidders(bidsData);
+        setBiddersLoading(false);
+      }, (error) => {
+        console.error("Error fetching bidders: ", error);
+        setBiddersLoading(false);
+      });
+
+
+      // Cleanup listener saat komponen unmount
+      return () => {
+        unsubscribeJob();
+        unsubscribeBids();
+      }
     }
   }, [params.jobId]);
 
@@ -179,41 +185,46 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
       {/* Daftar Penawar */}
       <div className="space-y-4">
         <h2 className="text-2xl font-bold tracking-tight">Daftar Penawar ({bidders.length})</h2>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {bidders.map((bidder) => (
-            <Card key={bidder.id} className="flex flex-col">
-              <CardHeader className="flex-1">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={bidder.avatarUrl} alt={bidder.name} />
-                    <AvatarFallback>{bidder.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <CardTitle>{bidder.name}</CardTitle>
-                    <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold">{bidder.rating}</span>
-                      <span>({bidder.reviews} ulasan)</span>
+         {biddersLoading ? (
+            <div className="flex justify-center items-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        ) : bidders.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {bidders.map((bidder) => (
+                <Card key={bidder.id} className="flex flex-col">
+                <CardHeader className="flex-1">
+                    <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16">
+                        <AvatarImage src={bidder.providerAvatarUrl} alt={bidder.providerName} />
+                        <AvatarFallback>{bidder.providerName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <CardTitle>{bidder.providerName}</CardTitle>
+                        <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-semibold">{bidder.providerRating}</span>
+                        <span>({bidder.reviews || 0} ulasan)</span>
+                        </div>
                     </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardFooter className="flex gap-2">
-                <Button variant="outline" className="w-full">
-                  <User className="mr-2 h-4 w-4" />
-                  Lihat Profil
-                </Button>
-                <Button className="w-full">Terima Tawaran</Button>
-              </CardFooter>
+                    </div>
+                </CardHeader>
+                <CardFooter className="flex gap-2">
+                    <Button variant="outline" className="w-full">
+                    <User className="mr-2 h-4 w-4" />
+                    Lihat Profil
+                    </Button>
+                    <Button className="w-full">Terima Tawaran</Button>
+                </CardFooter>
+                </Card>
+            ))}
+            </div>
+        ) : (
+            <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                Belum ada penyedia jasa yang memberikan penawaran untuk pekerjaan ini.
+                </CardContent>
             </Card>
-          ))}
-        </div>
-         {bidders.length === 0 && (
-          <Card>
-            <CardContent className="p-6 text-center text-muted-foreground">
-              Belum ada penyedia jasa yang memberikan penawaran untuk pekerjaan ini.
-            </CardContent>
-          </Card>
         )}
       </div>
     </div>
