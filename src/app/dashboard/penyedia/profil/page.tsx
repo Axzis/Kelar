@@ -26,6 +26,7 @@ import {
     DialogClose,
 } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
 
 // Placeholder data
 const userProfile = {
@@ -46,6 +47,7 @@ export default function ProfilePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const { toast } = useToast();
 
   const handleSaveChanges = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +55,10 @@ export default function ProfilePage() {
     // Simulasi proses penyimpanan
     setTimeout(() => {
         setIsSaving(false);
-        // Tampilkan toast sukses di sini nanti
+        toast({
+            title: 'Profil Diperbarui',
+            description: 'Perubahan pada profil Anda telah berhasil disimpan.',
+        });
     }, 1500);
   };
   
@@ -64,7 +69,10 @@ export default function ProfilePage() {
     setTimeout(() => {
         setIsUploading(false);
         setIsModalOpen(false);
-         // Tampilkan toast sukses di sini nanti
+         toast({
+            title: 'Portofolio Ditambahkan',
+            description: 'Item portofolio baru telah berhasil diunggah.',
+        });
     }, 1500);
   };
 
@@ -233,4 +241,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
