@@ -17,7 +17,7 @@ import { ArrowLeft, Calendar, Tag, Star, User, DollarSign, Loader2, MessageSquar
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot, collection, query, writeBatch } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, writeBatch, Timestamp, addDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { format, fromUnixTime } from 'date-fns';
@@ -162,6 +162,16 @@ export default function JobDetailPage() {
                 batch.update(bidRef, { status: 'REJECTED' });
             }
         });
+
+        // 3. Buat notifikasi untuk penyedia jasa yang menang
+        await addDoc(collection(db, 'notifications'), {
+            userId: bidder.id, // ID penyedia jasa yang menang
+            message: `Selamat! Tawaran Anda untuk pekerjaan "${jobDetails.title}" telah diterima.`,
+            linkTo: `/dashboard/penyedia/tawaran`,
+            isRead: false,
+            createdAt: Timestamp.now(),
+        });
+
 
         // Commit batch
         await batch.commit();

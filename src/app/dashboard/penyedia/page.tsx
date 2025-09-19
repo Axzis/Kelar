@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { GalleryVertical, DollarSign, Star, PackageOpen, Loader2, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, getDoc, setDoc, Timestamp, addDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { formatDistanceToNow } from 'date-fns';
@@ -36,6 +36,7 @@ interface Job {
   category: string;
   budget: number;
   status: string;
+  hirerId: string; // Add hirerId to send notification
   createdAt: {
     seconds: number;
     nanoseconds: number;
@@ -173,12 +174,13 @@ export default function DashboardPenyediaPage() {
         throw new Error('Data penyedia jasa tidak ditemukan.');
       }
       const userData = userDoc.data();
+      const providerName = userData.nama || 'Penyedia Tanpa Nama';
 
       const bidDocRef = doc(db, 'jobs', job.id, 'bids', currentUser.uid);
 
       await setDoc(bidDocRef, {
         providerId: currentUser.uid,
-        providerName: userData.nama || 'Tanpa Nama',
+        providerName,
         providerRating: 4.8, 
         providerAvatarUrl: userData.photoURL || `https://picsum.photos/seed/${currentUser.uid}/100/100`,
         reviews: 15,
@@ -186,6 +188,18 @@ export default function DashboardPenyediaPage() {
         jobTitle: job.title,
         status: 'PENDING',
       });
+      
+      // Create notification for the job hirer
+      if (job.hirerId) {
+        await addDoc(collection(db, 'notifications'), {
+            userId: job.hirerId,
+            message: `Anda memiliki penawaran baru dari ${providerName} untuk pekerjaan "${job.title}".`,
+            linkTo: `/dashboard/penyewa/pekerjaan/${job.id}`,
+            isRead: false,
+            createdAt: Timestamp.now(),
+        });
+      }
+
 
       setBiddingStatus(prev => ({ ...prev, [job.id]: true }));
       toast({
