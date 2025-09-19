@@ -179,3 +179,5 @@ export function ChatPanel({ isOpen, onClose, chatId, currentUserId, recipient }:
     </div>
   );
 }
+
+    
