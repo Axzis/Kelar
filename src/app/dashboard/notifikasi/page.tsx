@@ -21,7 +21,8 @@ import {
   orderBy,
   Timestamp,
   writeBatch,
-  getDocs
+  getDocs,
+  doc
 } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { formatDistanceToNow } from 'date-fns';
@@ -57,10 +58,10 @@ export default function NotifikasiPage() {
     }
 
     setLoading(true);
+    // Modified query: removed orderBy to avoid needing a composite index
     const q = query(
       collection(db, 'notifications'),
-      where('userId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -68,7 +69,15 @@ export default function NotifikasiPage() {
         id: doc.id,
         ...doc.data()
       })) as Notification[];
-      setNotifications(notifs);
+      
+      // Sort notifications on the client-side
+      const sortedNotifs = notifs.sort((a, b) => {
+          const dateA = a.createdAt ? a.createdAt.toDate() : new Date(0);
+          const dateB = b.createdAt ? b.createdAt.toDate() : new Date(0);
+          return dateB.getTime() - dateA.getTime();
+      });
+
+      setNotifications(sortedNotifs);
       setLoading(false);
     }, (error) => {
         console.error("Error fetching notifications: ", error);
@@ -84,9 +93,16 @@ export default function NotifikasiPage() {
     if (unreadNotifications.length === 0) return;
 
     const batch = writeBatch(db);
-    unreadNotifications.forEach(notif => {
-        const notifRef = doc(db, 'notifications', notif.id);
-        batch.update(notifRef, { isRead: true });
+    // Get unread documents from Firestore to mark them as read
+     const q = query(
+        collection(db, "notifications"),
+        where("userId", "==", currentUser.uid),
+        where("isRead", "==", false)
+    );
+    const unreadDocs = await getDocs(q);
+    
+    unreadDocs.forEach(document => {
+        batch.update(doc(db, 'notifications', document.id), { isRead: true });
     });
 
     try {
