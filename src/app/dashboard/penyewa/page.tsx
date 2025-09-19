@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -21,12 +20,13 @@ import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Activity, DollarSign, Loader2 } from 'lucide-react';
 import { CreateRequestModal } from '@/components/dashboard/penyewa/create-request-modal';
 import { useState, useEffect, useMemo } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { format, fromUnixTime } from 'date-fns';
 import { id } from 'date-fns/locale';
 
+// Interface untuk mendefinisikan struktur data pekerjaan
 interface Job {
   id: string;
   title: string;
@@ -40,6 +40,7 @@ interface Job {
   provider?: string;
 }
 
+// Objek untuk memetakan status pekerjaan ke varian warna Badge
 const statusVariant: { [key in Job['status']]: "default" | "secondary" | "destructive" | "outline" } = {
   'SELESAI': 'default',
   'DALAM PENGERJAAN': 'secondary',
@@ -48,6 +49,7 @@ const statusVariant: { [key in Job['status']]: "default" | "secondary" | "destru
   'OPEN': 'secondary',
 };
 
+// Objek untuk memetakan status pekerjaan ke teks yang lebih ramah pengguna
 const statusDisplay: { [key in Job['status']]: string } = {
     'SELESAI': 'Selesai',
     'DALAM PENGERJAAN': 'Dalam Pengerjaan',
@@ -62,6 +64,7 @@ export default function DashboardPenyewaPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Efek untuk memantau status otentikasi pengguna
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -69,12 +72,14 @@ export default function DashboardPenyewaPage() {
     return () => unsubscribeAuth();
   }, []);
 
+  // Efek untuk mengambil data pekerjaan dari Firestore secara real-time
   useEffect(() => {
     if (currentUser) {
       setLoading(true);
       const q = query(
         collection(db, 'jobs'),
-        where('hirerId', '==', currentUser.uid)
+        where('hirerId', '==', currentUser.uid),
+        orderBy('createdAt', 'desc') // Mengurutkan langsung di query
       );
 
       const unsubscribeFirestore = onSnapshot(q, (querySnapshot) => {
@@ -83,8 +88,6 @@ export default function DashboardPenyewaPage() {
           ...doc.data(),
         })) as Job[];
         
-        jobsData.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
-
         setJobs(jobsData);
         setLoading(false);
       }, (error) => {
@@ -94,38 +97,43 @@ export default function DashboardPenyewaPage() {
 
       return () => unsubscribeFirestore();
     } else {
+      // Jika tidak ada user, kosongkan data dan berhenti loading
       setJobs([]);
       setLoading(false);
     }
   }, [currentUser]);
 
+  // Menghitung jumlah pekerjaan aktif dengan useMemo untuk optimasi
   const activeJobsCount = useMemo(() => {
     return jobs.filter(job => job.status === 'DALAM PENGERJAAN' || job.status === 'MENUNGGU PEMBAYARAN').length;
   }, [jobs]);
 
+  // Menghitung total pengeluaran dari pekerjaan yang selesai
   const totalSpending = useMemo(() => {
     return jobs.filter(job => job.status === 'SELESAI').reduce((sum, job) => sum + job.budget, 0);
   }, [jobs]);
 
   return (
     <div className="space-y-8">
+      {/* Header Halaman */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight">
             Selamat Datang, {currentUser?.displayName || 'Pengguna'}!
-            </h1>
-            <p className="text-muted-foreground">
-                Lihat ringkasan dan kelola semua pekerjaan Anda di sini.
-            </p>
+          </h1>
+          <p className="text-muted-foreground">
+            Lihat ringkasan dan kelola semua pekerjaan Anda di sini.
+          </p>
         </div>
         <CreateRequestModal isOpen={isModalOpen} onOpenChange={setIsModalOpen}>
-            <Button size="lg" onClick={() => setIsModalOpen(true)}>
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Buat Permintaan Jasa Baru
-            </Button>
+          <Button size="lg" onClick={() => setIsModalOpen(true)}>
+            <PlusCircle className="mr-2 h-5 w-5" />
+            Buat Permintaan Jasa Baru
+          </Button>
         </CreateRequestModal>
       </div>
 
+      {/* Kartu Ringkasan */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -150,7 +158,7 @@ export default function DashboardPenyewaPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalSpending)}
+              {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalSpending)}
             </div>
             <p className="text-xs text-muted-foreground">
               Total dari semua pekerjaan yang selesai.
@@ -159,6 +167,7 @@ export default function DashboardPenyewaPage() {
         </Card>
       </div>
 
+      {/* Tabel Daftar Pekerjaan */}
       <div>
         <Card>
           <CardHeader>
@@ -166,45 +175,43 @@ export default function DashboardPenyewaPage() {
             <CardDescription>Berikut adalah daftar pekerjaan yang baru-baru ini Anda buat.</CardDescription>
           </CardHeader>
           <CardContent>
-             {loading ? (
-                 <div className="flex justify-center items-center h-40">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                 </div>
-             ) : (
-                <Table>
+            {loading ? (
+              <div className="flex justify-center items-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <Table>
                 <TableHeader>
-                    <TableRow>
-                    <TableHead>ID Pekerjaan</TableHead>
+                  <TableRow>
                     <TableHead>Layanan</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Penyedia Jasa</TableHead>
                     <TableHead>Tanggal</TableHead>
                     <TableHead className="text-right">Biaya</TableHead>
-                    </tr >
+                  </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {jobs.length > 0 ? jobs.map((job) => (
+                  {jobs.length > 0 ? jobs.map((job) => (
                     <TableRow key={job.id}>
-                        <TableCell className="font-medium truncate max-w-20">{job.id}</TableCell>
-                        <TableCell>{job.title}</TableCell>
-                        <TableCell>
+                      <TableCell className="font-medium">{job.title}</TableCell>
+                      <TableCell>
                         <Badge variant={statusVariant[job.status] || 'default'}>{statusDisplay[job.status] || 'Tidak Diketahui'}</Badge>
-                        </TableCell>
-                        <TableCell>{job.provider || '-'}</TableCell>
-                        <TableCell>{job.createdAt ? format(fromUnixTime(job.createdAt.seconds), 'd MMMM yyyy', { locale: id }) : '-'}</TableCell>
-                        <TableCell className="text-right">
-                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(job.budget)}
-                        </TableCell>
+                      </TableCell>
+                      <TableCell>{job.provider || '-'}</TableCell>
+                      <TableCell>{job.createdAt ? format(fromUnixTime(job.createdAt.seconds), 'd MMM yyyy', { locale: id }) : '-'}</TableCell>
+                      <TableCell className="text-right">
+                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(job.budget)}
+                      </TableCell>
                     </TableRow>
-                    )) : (
-                        <TableRow>
-                            <TableCell colSpan={6} className="text-center h-24">
-                                Anda belum membuat permintaan jasa.
-                            </TableCell>
-                        </TableRow>
-                    )}
+                  )) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center h-24">
+                        Anda belum membuat permintaan jasa.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
-                </Table>
+              </Table>
             )}
           </CardContent>
         </Card>
