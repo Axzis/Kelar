@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Calendar, Tag, Star, User, DollarSign, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Tag, Star, User, DollarSign, Loader2, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, use } from 'react';
@@ -22,6 +22,7 @@ import { db } from '@/lib/firebase';
 import { format, fromUnixTime } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 
 
 // Interface untuk data pekerjaan
@@ -76,6 +77,7 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
   const [loading, setLoading] = useState(true);
   const [biddersLoading, setBiddersLoading] = useState(true);
   const [acceptingBid, setAcceptingBid] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const { jobId } = use(params);
@@ -267,6 +269,11 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
                     </div>
                     </div>
                 </CardHeader>
+                 <CardFooter>
+                    <Button onClick={() => setIsChatOpen(true)}>
+                        <MessageSquare className="mr-2 h-4 w-4" /> Hubungi
+                    </Button>
+                </CardFooter>
             </Card>
         ) : bidders.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -288,20 +295,26 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
                     </div>
                     </div>
                 </CardHeader>
-                <CardFooter className="flex gap-2">
-                    <Button variant="outline" className="w-full" asChild disabled={acceptingBid !== null}>
-                      <Link href={`/penyedia/${bidder.id}`}>
-                        <User className="mr-2 h-4 w-4" />
-                        Lihat Profil
-                      </Link>
-                    </Button>
-                    <Button 
+                <CardFooter className="flex flex-col items-stretch gap-2">
+                     <Button 
                         className="w-full" 
                         onClick={() => handleAcceptBid(bidder)} 
                         disabled={acceptingBid !== null || jobDetails.status !== 'OPEN'}
                     >
                         {acceptingBid === bidder.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Terima Tawaran'}
                     </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" className="w-full" asChild disabled={acceptingBid !== null}>
+                        <Link href={`/penyedia/${bidder.id}`}>
+                            <User className="mr-2 h-4 w-4" />
+                            Profil
+                        </Link>
+                        </Button>
+                         <Button variant="secondary" className="w-full" onClick={() => setIsChatOpen(true)} disabled={acceptingBid !== null}>
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Hubungi
+                        </Button>
+                    </div>
                 </CardFooter>
                 </Card>
             ))}
@@ -314,6 +327,13 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
             </Card>
         )}
       </div>
+
+       <ChatPanel 
+        isOpen={isChatOpen} 
+        onClose={() => setIsChatOpen(false)} 
+       />
     </div>
   );
 }
+
+    
