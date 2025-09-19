@@ -17,7 +17,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Link from 'next/link';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
@@ -27,7 +26,6 @@ export default function RegistrasiPage() {
   const [namaLengkap, setNamaLengkap] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleUser, setGoogleUser] = useState<User | null>(null);
@@ -54,10 +52,6 @@ export default function RegistrasiPage() {
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!role) {
-      setError('Silakan pilih peran Anda.');
-      return;
-    }
     setLoading(true);
     setError('');
 
@@ -80,12 +74,11 @@ export default function RegistrasiPage() {
         user = userCredential.user;
       }
       
-      // Save user data to Firestore
+      // Save user data to Firestore (without role)
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         nama: namaLengkap,
         email: user.email,
-        peran: role,
       });
 
       // Create session cookie
@@ -103,11 +96,8 @@ export default function RegistrasiPage() {
         description: "Akun Anda telah berhasil dibuat.",
       });
 
-      if (role === 'penyewa') {
-        router.push('/dashboard/penyewa');
-      } else {
-        router.push('/dashboard/penyedia');
-      }
+      // Redirect to default dashboard
+      router.push('/dashboard/penyewa');
 
     } catch (error: any) {
       console.error("Error during registration:", error);
@@ -149,16 +139,29 @@ export default function RegistrasiPage() {
           title: 'Akun Sudah Terdaftar',
           description: 'Anda sudah memiliki akun, langsung masuk.',
         });
-        const role = userDoc.data().peran;
-        if(role === 'penyewa') {
-            router.push('/dashboard/penyewa');
-        } else {
-            router.push('/dashboard/penyedia');
-        }
+        router.push('/dashboard/penyewa'); // Redirect to default dashboard
       } else {
-        setGoogleUser(user);
-        setNamaLengkap(user.displayName || '');
-        setEmail(user.email || '');
+        // If it's a new Google user, we need to create their record in Firestore
+        // and then log them in.
+        await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            nama: user.displayName,
+            email: user.email,
+        });
+
+        const idToken = await user.getIdToken();
+        await fetch('/api/session/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+        });
+
+        toast({
+            title: "Registrasi Berhasil!",
+            description: "Akun Anda telah berhasil dibuat.",
+        });
+
+        router.push('/dashboard/penyewa'); // Redirect to default dashboard
       }
     } catch (error) {
       setError('Gagal mendaftar dengan Google.');
@@ -227,24 +230,6 @@ export default function RegistrasiPage() {
                     />
                 </div>
               )}
-              <div className="space-y-2">
-                  <Label>Saya ingin mendaftar sebagai:</Label>
-                  <RadioGroup 
-                    required
-                    className="flex space-x-4"
-                    value={role}
-                    onValueChange={setRole}
-                  >
-                      <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="penyewa" id="role-penyewa" />
-                          <Label htmlFor="role-penyewa">Penyewa Jasa</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="penyedia" id="role-penyedia" />
-                          <Label htmlFor="role-penyedia">Penyedia Jasa</Label>
-                      </div>
-                  </RadioGroup>
-              </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               {!googleUser && (
                 <div className="flex items-start space-x-2 pt-2">
@@ -280,7 +265,7 @@ export default function RegistrasiPage() {
                         </span>
                         </div>
                     </div>
-                    <Button variant="outline" className="w-full font-bold" onClick={handleGoogleRegister} disabled={loading}>
+                    <Button variant="outline" type="button" className="w-full font-bold" onClick={handleGoogleRegister} disabled={loading}>
                         {loading ? 'Memproses...' : 'Daftar dengan Google'}
                     </Button>
                 </>

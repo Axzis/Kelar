@@ -27,9 +27,9 @@ export async function middleware(request: NextRequest) {
     await auth().verifySessionCookie(sessionCookie, true);
 
     // Jika pengguna sudah login dan mencoba mengakses halaman login/registrasi,
-    // redirect mereka ke halaman utama atau dashboard
+    // redirect mereka ke dashboard default (misalnya penyewa)
     if (isAuthPage) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return NextResponse.redirect(new URL('/dashboard/penyewa', request.url));
     }
 
     // Jika pengguna sudah login dan mengakses halaman lain, lanjutkan

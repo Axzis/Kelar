@@ -19,12 +19,14 @@ import {
   User,
   Settings,
   LogOut,
+  ArrowRightLeft,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePathname, useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 const menuItems = [
   { href: '/dashboard/penyewa', label: 'Dashboard', icon: LayoutDashboard },
@@ -72,6 +74,14 @@ export default function DashboardLayout({
           </div>
         </SidebarHeader>
         <SidebarContent>
+            <div className="p-2">
+                <Button asChild className="w-full justify-start">
+                    <Link href="/dashboard/penyedia">
+                        <ArrowRightLeft className="mr-2" />
+                        <span>Mode Penyedia</span>
+                    </Link>
+                </Button>
+            </div>
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.label}>

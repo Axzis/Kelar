@@ -46,38 +46,35 @@ export default function LoginPage() {
       const idToken = await user.getIdToken();
 
       // Create session cookie
-      await fetch('/api/session/login', {
+      const response = await fetch('/api/session/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ idToken }),
       });
+      
+      if (!response.ok) {
+          throw new Error('Gagal membuat sesi login.');
+      }
 
 
-      // Get user role from Firestore
+      // Get user data from Firestore
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        const role = userData.peran;
-
         toast({
           title: "Login Berhasil!",
           description: `Selamat datang kembali, ${userData.nama}.`,
         });
 
-        // Redirect based on role
-        if (role === 'penyewa') {
-          router.push('/dashboard/penyewa');
-        } else if (role === 'penyedia') {
-          router.push('/dashboard/penyedia');
-        } else {
-          // Fallback to home if role is not defined
-          router.push('/');
-        }
+        // Redirect to default dashboard
+        router.push('/dashboard/penyewa');
+
       } else {
+        // This case should ideally not happen if user is registered, but as a fallback:
         throw new Error("Data pengguna tidak ditemukan.");
       }
 
@@ -116,17 +113,13 @@ export default function LoginPage() {
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
-        const userData = userDoc.data();
         toast({
           title: 'Login Berhasil!',
           description: `Selamat datang kembali, ${user.displayName}.`,
         });
-        if (userData.peran === 'penyewa') {
-          router.push('/dashboard/penyewa');
-        } else {
-          router.push('/dashboard/penyedia');
-        }
+        router.push('/dashboard/penyewa'); // Redirect to default dashboard
       } else {
+        // If user logs in with Google but isn't in Firestore, redirect to finish registration
         router.push('/registrasi?newGoogleUser=true');
       }
     } catch (error: any) {
