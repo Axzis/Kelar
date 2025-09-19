@@ -5,6 +5,12 @@
       "description": "A person happily using a service on their laptop, representing tasks getting done.",
       "imageUrl": "https://picsum.photos/seed/kelar-hero/800/600",
       "imageHint": "person laptop"
+    },
+    {
+      "id": "hero-landing-2",
+      "description": "A handyman confidently holding tools, ready to work.",
+      "imageUrl": "https://picsum.photos/seed/kelar-hero-2/800/600",
+      "imageHint": "handyman tools"
     }
   ]
 }
