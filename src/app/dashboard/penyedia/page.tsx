@@ -18,14 +18,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { GalleryVertical, DollarSign, Star, PackageOpen, Loader2 } from 'lucide-react';
+import { GalleryVertical, DollarSign, Star, PackageOpen, Loader2, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { format, fromUnixTime, formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { useToast } from '@/hooks/use-toast';
+
 
 interface Job {
   id: string;
@@ -38,10 +40,18 @@ interface Job {
   };
 }
 
+interface BidStatus {
+  [jobId: string]: boolean;
+}
+
+
 export default function DashboardPenyediaPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [myBids, setMyBids] = useState<BidStatus>({});
+  const [biddingJobId, setBiddingJobId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -51,27 +61,37 @@ export default function DashboardPenyediaPage() {
   }, []);
 
   useEffect(() => {
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    };
+    
     setLoading(true);
-    // Menghapus orderBy dari query untuk menghindari error indeks komposit
     const q = query(
       collection(db, 'jobs'),
       where('status', '==', 'OPEN')
     );
 
-    const unsubscribeFirestore = onSnapshot(q, (querySnapshot) => {
+    const unsubscribeFirestore = onSnapshot(q, async (querySnapshot) => {
       const jobsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       })) as Job[];
       
-      // Melakukan sorting di sisi client
-      const sortedJobs = jobsData.sort((a, b) => {
-        const dateA = a.createdAt ? fromUnixTime(a.createdAt.seconds) : new Date(0);
-        const dateB = b.createdAt ? fromUnixTime(b.createdAt.seconds) : new Date(0);
-        return dateB.getTime() - dateA.getTime();
-      });
-
+      const sortedJobs = jobsData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
       setAvailableJobs(sortedJobs);
+
+      // Check for existing bids
+      const bidStatus: BidStatus = {};
+      for (const job of sortedJobs) {
+        const bidDocRef = doc(db, 'jobs', job.id, 'bids', currentUser.uid);
+        const bidDoc = await getDoc(bidDocRef);
+        if (bidDoc.exists()) {
+          bidStatus[job.id] = true;
+        }
+      }
+      setMyBids(bidStatus);
+
       setLoading(false);
     }, (error) => {
       console.error("Error fetching available jobs: ", error);
@@ -79,7 +99,63 @@ export default function DashboardPenyediaPage() {
     });
 
     return () => unsubscribeFirestore();
-  }, []);
+  }, [currentUser]);
+
+
+  const handleBid = async (jobId: string) => {
+    if (!currentUser) {
+      toast({
+        variant: 'destructive',
+        title: 'Anda harus login',
+        description: 'Silakan login untuk memberikan penawaran.',
+      });
+      return;
+    }
+
+    setBiddingJobId(jobId);
+
+    try {
+      // 1. Get provider data
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        throw new Error('Data penyedia jasa tidak ditemukan.');
+      }
+      const userData = userDoc.data();
+
+      // 2. Create bid document reference
+      const bidDocRef = doc(db, 'jobs', jobId, 'bids', currentUser.uid);
+
+      // 3. Denormalize data and set it
+      await setDoc(bidDocRef, {
+        providerId: currentUser.uid,
+        providerName: userData.nama || 'Tanpa Nama',
+        providerRating: 4.8, // Placeholder rating
+        providerAvatarUrl: userData.photoURL || `https://picsum.photos/seed/${currentUser.uid}/100/100`, // Placeholder avatar
+        reviews: 15, // Placeholder review count
+        createdAt: Timestamp.now(),
+        status: 'PENDING',
+      });
+
+      // 4. Update local state and give feedback
+      setMyBids(prev => ({ ...prev, [jobId]: true }));
+      toast({
+        title: 'Tawaran Terkirim!',
+        description: 'Anda telah berhasil memberikan penawaran untuk pekerjaan ini.',
+      });
+
+    } catch (error) {
+      console.error('Error placing bid:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Mengirim Tawaran',
+        description: 'Terjadi kesalahan saat memproses permintaan Anda.',
+      });
+    } finally {
+      setBiddingJobId(null);
+    }
+  };
 
 
   const formatPostedDate = (date: { seconds: number; nanoseconds: number }) => {
@@ -185,7 +261,19 @@ export default function DashboardPenyediaPage() {
                         </TableCell>
                         <TableCell>{formatPostedDate(job.createdAt)}</TableCell>
                         <TableCell className="text-right">
-                            <Button variant="secondary" size="sm">Lihat Detail</Button>
+                           <Button
+                                variant={myBids[job.id] ? 'secondary' : 'default'}
+                                size="sm"
+                                onClick={() => handleBid(job.id)}
+                                disabled={myBids[job.id] || biddingJobId === job.id}
+                            >
+                                {biddingJobId === job.id ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : myBids[job.id] ? (
+                                    <Check className="mr-2 h-4 w-4" />
+                                ) : null}
+                                {biddingJobId === job.id ? 'Mengirim...' : myBids[job.id] ? 'Tawaran Terkirim' : 'Berikan Penawaran'}
+                            </Button>
                         </TableCell>
                     </TableRow>
                     )) : (
@@ -204,3 +292,5 @@ export default function DashboardPenyediaPage() {
     </div>
   );
 }
+
+    
