@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Activity, DollarSign, Loader2 } from 'lucide-react';
 import { CreateRequestModal } from '@/components/dashboard/penyewa/create-request-modal';
 import { useState, useEffect, useMemo } from 'react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { format, fromUnixTime } from 'date-fns';
@@ -75,7 +75,6 @@ export default function DashboardPenyewaPage() {
       const q = query(
         collection(db, 'jobs'),
         where('hirerId', '==', currentUser.uid)
-        // orderBy('createdAt', 'desc') // Temporarily removed to avoid index error
       );
 
       const unsubscribeFirestore = onSnapshot(q, (querySnapshot) => {
@@ -84,7 +83,6 @@ export default function DashboardPenyewaPage() {
           ...doc.data(),
         })) as Job[];
         
-        // Sorting manually because of Firestore index issue
         jobsData.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
 
         setJobs(jobsData);
@@ -96,7 +94,6 @@ export default function DashboardPenyewaPage() {
 
       return () => unsubscribeFirestore();
     } else {
-      // No user logged in
       setJobs([]);
       setLoading(false);
     }
