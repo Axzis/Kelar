@@ -37,7 +37,7 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
 
   return (
     <div className="fixed bottom-4 right-4 z-50 w-full max-w-sm">
-      <div className="flex h-[60vh] flex-col rounded-lg border bg-card shadow-lg">
+      <div className="flex h-[70vh] flex-col rounded-lg border bg-card shadow-lg">
         {/* Header Chat */}
         <div className="flex items-center justify-between border-b p-3">
           <div className="flex items-center gap-3">
