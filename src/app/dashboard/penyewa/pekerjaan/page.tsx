@@ -18,10 +18,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Activity, DollarSign, Loader2, Eye } from 'lucide-react';
+import { PlusCircle, Eye, Loader2 } from 'lucide-react';
 import { CreateRequestModal } from '@/components/dashboard/penyewa/create-request-modal';
 import { useState, useEffect, useMemo } from 'react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { format, fromUnixTime } from 'date-fns';
@@ -111,15 +111,6 @@ export default function DashboardPekerjaanPenyewaPage() {
     }
   }, [currentUser]);
 
-  // Menghitung jumlah pekerjaan aktif dengan useMemo untuk optimasi
-  const activeJobsCount = useMemo(() => {
-    return jobs.filter(job => job.status === 'DALAM PENGERJAAN' || job.status === 'MENUNGGU PEMBAYARAN').length;
-  }, [jobs]);
-
-  // Menghitung total pengeluaran dari pekerjaan yang selesai
-  const totalSpending = useMemo(() => {
-    return jobs.filter(job => job.status === 'SELESAI').reduce((sum, job) => sum + job.budget, 0);
-  }, [jobs]);
 
   return (
     <div className="space-y-8">
