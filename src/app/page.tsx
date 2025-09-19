@@ -100,7 +100,7 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16 sm:py-24">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <div className="space-y-6 text-center lg:text-left">
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-12 duration-700 delay-100">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-100">
               <h1 className="font-headline text-4xl font-bold tracking-tighter text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
                 Selesaikan Semua Urusanmu, <span className="text-primary">Kelar-in Aja!</span>
               </h1>
@@ -108,16 +108,16 @@ export default function Home() {
                 Platform terpadu untuk semua kebutuhan jasa Anda. Dari perbaikan rumah hingga pengembangan skill, temukan profesional terbaik di sini.
               </p>
             </div>
-            <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start animate-in fade-in slide-in-from-bottom-12 duration-700 delay-200">
+            <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
               <Button asChild size="lg">
-                <Link href="/" className="font-bold">Saya butuh Jasa</Link>
+                <Link href="/cari-jasa" className="font-bold">Saya butuh Jasa</Link>
               </Button>
               <Button asChild size="lg" variant="secondary">
                 <Link href="/" className="font-bold">Saya tawarkan Jasa</Link>
               </Button>
             </div>
           </div>
-          <div className="flex items-center justify-center animate-in fade-in zoom-in-90 duration-700 delay-300">
+          <div className="flex items-center justify-center animate-in fade-in zoom-in-90 duration-1000 delay-300">
             {heroImage && (
               <Image
                 src={heroImage.imageUrl}
@@ -134,7 +134,7 @@ export default function Home() {
 
       {/* How it Works Section */}
       <section className="bg-secondary py-20">
-        <div className="container mx-auto px-4 text-center animate-in fade-in slide-in-from-bottom-16 duration-700">
+        <div className="container mx-auto px-4 text-center animate-in fade-in slide-in-from-bottom-16 duration-1000">
           <h2 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">Cara Kerjanya Mudah</h2>
           <p className="mx-auto mb-12 max-w-2xl text-muted-foreground">Hanya dengan tiga langkah sederhana, masalah Anda langsung beres.</p>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -153,7 +153,7 @@ export default function Home() {
 
       {/* Popular Services Section */}
       <section className="py-20">
-        <div className="container mx-auto px-4 text-center animate-in fade-in slide-in-from-bottom-16 duration-700">
+        <div className="container mx-auto px-4 text-center animate-in fade-in slide-in-from-bottom-16 duration-1000">
           <h2 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">Layanan Paling Populer</h2>
           <p className="mx-auto mb-12 max-w-2xl text-muted-foreground">Temukan jasa yang paling banyak dicari oleh pengguna kami.</p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
@@ -180,7 +180,7 @@ export default function Home() {
 
       {/* Testimonials Section */}
       <section className="bg-secondary py-20">
-        <div className="container mx-auto px-4 animate-in fade-in slide-in-from-bottom-16 duration-700">
+        <div className="container mx-auto px-4 animate-in fade-in slide-in-from-bottom-16 duration-1000">
           <h2 className="mb-2 text-center text-3xl font-bold tracking-tight sm:text-4xl">Apa Kata Mereka?</h2>
           <p className="mx-auto mb-12 max-w-2xl text-center text-muted-foreground">Cerita sukses dari para pengguna setia KelarApp.</p>
           <Carousel
@@ -221,7 +221,7 @@ export default function Home() {
       
       {/* Why Choose Us Section */}
       <section className="py-20">
-        <div className="container mx-auto px-4 animate-in fade-in slide-in-from-bottom-16 duration-700">
+        <div className="container mx-auto px-4 animate-in fade-in slide-in-from-bottom-16 duration-1000">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Mengapa Memilih KelarApp?</h2>
@@ -262,7 +262,7 @@ export default function Home() {
             <p className="mt-2 text-lg text-primary-foreground/90">Jadilah mitra kami dan dapatkan penghasilan tambahan dengan keahlian Anda.</p>
           </div>
           <Button asChild size="lg" variant="secondary" className="flex-shrink-0 bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-            <Link href="/" className="font-bold">Daftar Jadi Mitra</Link>
+            <Link href="/daftar" className="font-bold">Daftar Jadi Mitra</Link>
           </Button>
         </div>
       </section>
