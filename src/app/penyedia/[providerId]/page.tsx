@@ -19,7 +19,6 @@ interface Profile {
   spesialisasi: string;
   bio: string;
   photoURL: string;
-  // Tambahkan field lain jika ada, seperti rating, dll.
 }
 
 interface PortfolioItem {
@@ -274,3 +273,4 @@ export default function ProviderProfilePage({ params }: { params: { providerId: 
   );
 }
 
+    
