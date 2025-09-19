@@ -18,10 +18,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { GalleryVertical, DollarSign, Star, PackageOpen, Loader2, Check } from 'lucide-react';
+import { GalleryVertical, DollarSign, Star, PackageOpen, Loader2, Check, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, getDoc, setDoc, Timestamp, collectionGroup, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -44,6 +44,7 @@ interface Job {
 
 interface Bid {
     id: string;
+    jobId: string;
     jobTitle: string;
     status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
     createdAt: Timestamp;
@@ -91,7 +92,6 @@ export default function DashboardPenyediaPage() {
       return;
     };
     
-    // === Fetch All Jobs, then filter client-side for available jobs and my bids ===
     setLoading(true);
     setMyBidsLoading(true);
 
@@ -105,7 +105,6 @@ export default function DashboardPenyediaPage() {
       
       const sortedJobs = jobsData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
       
-      // Filter for available jobs
       const openJobs = sortedJobs.filter(job => job.status === 'OPEN');
       setAvailableJobs(openJobs);
 
@@ -120,9 +119,12 @@ export default function DashboardPenyediaPage() {
         bidStatus[job.id] = hasBid;
 
         if (hasBid) {
+            const bidData = bidDoc.data();
             bidsData.push({
                 id: bidDoc.id,
-                ...bidDoc.data()
+                jobId: job.id, // Menyertakan ID pekerjaan
+                jobTitle: job.title, // Menyertakan judul pekerjaan
+                ...bidData
             } as Bid);
         }
       }
@@ -358,6 +360,7 @@ export default function DashboardPenyediaPage() {
                                 <TableHead>Judul Pekerjaan</TableHead>
                                 <TableHead>Tanggal Tawaran</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Aksi</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -370,10 +373,18 @@ export default function DashboardPenyediaPage() {
                                             {statusDisplay[bid.status] || bid.status}
                                         </Badge>
                                     </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="outline" size="sm" asChild>
+                                            <Link href={`/dashboard/penyewa/pekerjaan/${bid.jobId}`}>
+                                                <Eye className="mr-2 h-4 w-4" />
+                                                Lihat Detail
+                                            </Link>
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-24">
+                                    <TableCell colSpan={4} className="text-center h-24">
                                         Anda belum pernah mengirimkan tawaran.
                                     </TableCell>
                                 </TableRow>
@@ -387,9 +398,5 @@ export default function DashboardPenyediaPage() {
       </div>
     </div>
   );
-
-    
-
-    
 
     
