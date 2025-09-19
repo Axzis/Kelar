@@ -19,7 +19,6 @@ import {
   query,
   where,
   onSnapshot,
-  orderBy,
   Timestamp,
   writeBatch,
   getDocs,
@@ -62,7 +61,7 @@ export function NotificationBell() {
     const q = query(
       collection(db, 'notifications'),
       where('userId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc'),
+      // orderBy('createdAt', 'desc'), // Removed to avoid needing a composite index
       limit(20)
     );
 
@@ -71,7 +70,15 @@ export function NotificationBell() {
         id: doc.id,
         ...doc.data()
       })) as Notification[];
-      setNotifications(notifs);
+
+      // Sort on the client-side
+      const sortedNotifs = notifs.sort((a, b) => {
+          const dateA = a.createdAt ? a.createdAt.toDate() : new Date(0);
+          const dateB = b.createdAt ? b.createdAt.toDate() : new Date(0);
+          return dateB.getTime() - dateA.getTime();
+      });
+
+      setNotifications(sortedNotifs);
     });
 
     return () => unsubscribe();
