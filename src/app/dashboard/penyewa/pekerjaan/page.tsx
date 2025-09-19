@@ -80,8 +80,7 @@ export default function DashboardPekerjaanPenyewaPage() {
       setLoading(true);
       const q = query(
         collection(db, 'jobs'),
-        where('hirerId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc') // Mengurutkan langsung di query
+        where('hirerId', '==', currentUser.uid)
       );
 
       const unsubscribeFirestore = onSnapshot(q, (querySnapshot) => {
@@ -90,7 +89,14 @@ export default function DashboardPekerjaanPenyewaPage() {
           ...doc.data(),
         })) as Job[];
         
-        setJobs(jobsData);
+        // Melakukan sorting di sisi client
+        const sortedJobs = jobsData.sort((a, b) => {
+            const dateA = a.createdAt ? fromUnixTime(a.createdAt.seconds) : new Date(0);
+            const dateB = b.createdAt ? fromUnixTime(b.createdAt.seconds) : new Date(0);
+            return dateB.getTime() - dateA.getTime();
+        });
+        
+        setJobs(sortedJobs);
         setLoading(false);
       }, (error) => {
         console.error("Error fetching jobs: ", error);
