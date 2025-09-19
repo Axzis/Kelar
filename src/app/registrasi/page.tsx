@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,9 +30,27 @@ export default function RegistrasiPage() {
   const [role, setRole] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleUser, setGoogleUser] = useState<User | null>(null);
   
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (searchParams.get('newGoogleUser') === 'true') {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          setGoogleUser(user);
+          setNamaLengkap(user.displayName || '');
+          setEmail(user.email || '');
+        } else {
+          router.push('/login');
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [searchParams, router]);
+
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -44,9 +62,24 @@ export default function RegistrasiPage() {
     setError('');
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      let user: User;
 
+      if (googleUser) {
+        user = googleUser;
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+           toast({
+            title: "Akun sudah terdaftar",
+            description: "Akun Google ini sudah terdaftar. Silakan masuk.",
+          });
+          router.push('/login');
+          return;
+        }
+      } else {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        user = userCredential.user;
+      }
+      
       // Save user data to Firestore
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
@@ -54,13 +87,27 @@ export default function RegistrasiPage() {
         email: user.email,
         peran: role,
       });
+
+      // Create session cookie
+      const idToken = await user.getIdToken();
+      await fetch('/api/session/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idToken }),
+      });
       
       toast({
         title: "Registrasi Berhasil!",
-        description: "Akun Anda telah berhasil dibuat. Silakan masuk.",
+        description: "Akun Anda telah berhasil dibuat.",
       });
 
-      router.push('/login');
+      if (role === 'penyewa') {
+        router.push('/dashboard/penyewa');
+      } else {
+        router.push('/dashboard/penyedia');
+      }
 
     } catch (error: any) {
       console.error("Error during registration:", error);
@@ -81,6 +128,50 @@ export default function RegistrasiPage() {
     }
   };
 
+  const handleGoogleRegister = async () => {
+    setLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+         const idToken = await user.getIdToken();
+          await fetch('/api/session/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+          });
+        toast({
+          title: 'Akun Sudah Terdaftar',
+          description: 'Anda sudah memiliki akun, langsung masuk.',
+        });
+        const role = userDoc.data().peran;
+        if(role === 'penyewa') {
+            router.push('/dashboard/penyewa');
+        } else {
+            router.push('/dashboard/penyedia');
+        }
+      } else {
+        setGoogleUser(user);
+        setNamaLengkap(user.displayName || '');
+        setEmail(user.email || '');
+      }
+    } catch (error) {
+      setError('Gagal mendaftar dengan Google.');
+      toast({
+        variant: 'destructive',
+        title: 'Registrasi Gagal',
+        description: 'Tidak dapat mendaftar dengan Google. Silakan coba lagi.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -88,12 +179,16 @@ export default function RegistrasiPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Buat Akun Baru</CardTitle>
+            <CardTitle className="text-2xl">{googleUser ? `Selesaikan Pendaftaran` : `Buat Akun Baru`}</CardTitle>
             <CardDescription>
-              Sudah punya akun?{' '}
-              <Link href="/login" className="font-medium text-primary hover:underline">
-                Masuk di sini
-              </Link>
+              { !googleUser && 
+                <>
+                Sudah punya akun?{' '}
+                <Link href="/login" className="font-medium text-primary hover:underline">
+                  Masuk di sini
+                </Link>
+                </>
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -117,18 +212,21 @@ export default function RegistrasiPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={!!googleUser}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
+              {!googleUser && (
+                <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                    id="password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    />
+                </div>
+              )}
               <div className="space-y-2">
                   <Label>Saya ingin mendaftar sebagai:</Label>
                   <RadioGroup 
@@ -148,37 +246,45 @@ export default function RegistrasiPage() {
                   </RadioGroup>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <div className="flex items-start space-x-2 pt-2">
-                  <Checkbox id="terms" required />
-                  <label
-                  htmlFor="terms"
-                  className="text-sm text-muted-foreground"
-                  >
-                  Saya setuju dengan{' '}
-                  <Link href="#" className="font-medium text-primary hover:underline">
-                      Syarat & Ketentuan
-                  </Link>{' '}
-                  dan{' '}
-                  <Link href="#" className="font-medium text-primary hover:underline">
-                      Kebijakan Privasi
-                  </Link>
-                  .
-                  </label>
-              </div>
+              {!googleUser && (
+                <div className="flex items-start space-x-2 pt-2">
+                    <Checkbox id="terms" required />
+                    <label
+                    htmlFor="terms"
+                    className="text-sm text-muted-foreground"
+                    >
+                    Saya setuju dengan{' '}
+                    <Link href="#" className="font-medium text-primary hover:underline">
+                        Syarat & Ketentuan
+                    </Link>{' '}
+                    dan{' '}
+                    <Link href="#" className="font-medium text-primary hover:underline">
+                        Kebijakan Privasi
+                    </Link>
+                    .
+                    </label>
+                </div>
+              )}
               <Button type="submit" className="w-full font-bold" disabled={loading}>
-                {loading ? 'Mendaftar...' : 'Daftar'}
+                {loading ? 'Mendaftar...' : googleUser ? 'Selesaikan Pendaftaran' : 'Daftar'}
               </Button>
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Atau lanjut dengan
-                  </span>
-                </div>
-              </div>
-              <Button variant="outline" className="w-full font-bold">Daftar dengan Google</Button>
+              {!googleUser && (
+                <>
+                    <div className="relative my-4">
+                        <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                            Atau lanjut dengan
+                        </span>
+                        </div>
+                    </div>
+                    <Button variant="outline" className="w-full font-bold" onClick={handleGoogleRegister} disabled={loading}>
+                        {loading ? 'Memproses...' : 'Daftar dengan Google'}
+                    </Button>
+                </>
+              )}
             </form>
           </CardContent>
         </Card>

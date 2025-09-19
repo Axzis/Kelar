@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { useToast } from '@/hooks/use-toast';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -40,6 +41,19 @@ export default function LoginPage() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+
+      // Get ID token
+      const idToken = await user.getIdToken();
+
+      // Create session cookie
+      await fetch('/api/session/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idToken }),
+      });
+
 
       // Get user role from Firestore
       const userDocRef = doc(db, 'users', user.uid);
@@ -83,6 +97,50 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const idToken = await user.getIdToken();
+      await fetch('/api/session/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        toast({
+          title: 'Login Berhasil!',
+          description: `Selamat datang kembali, ${user.displayName}.`,
+        });
+        if (userData.peran === 'penyewa') {
+          router.push('/dashboard/penyewa');
+        } else {
+          router.push('/dashboard/penyedia');
+        }
+      } else {
+        router.push('/registrasi?newGoogleUser=true');
+      }
+    } catch (error: any) {
+      setError('Gagal login dengan Google.');
+      toast({
+        variant: 'destructive',
+        title: 'Login Gagal',
+        description: 'Tidak dapat login dengan Google. Silakan coba lagi.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -155,7 +213,9 @@ export default function LoginPage() {
                   </span>
                 </div>
               </div>
-              <Button variant="outline" className="w-full font-bold">Masuk dengan Google</Button>
+              <Button variant="outline" className="w-full font-bold" onClick={handleGoogleLogin} disabled={loading}>
+                {loading ? 'Memproses...' : 'Masuk dengan Google'}
+              </Button>
           </CardFooter>
         </Card>
       </main>
