@@ -7,9 +7,7 @@ import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-const navLinks = [
-  { href: '/', label: 'Beranda' },
-];
+const navLinks: { href: string; label: string }[] = [];
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
