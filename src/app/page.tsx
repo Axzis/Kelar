@@ -24,6 +24,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
+import { AnimateOnScroll } from '@/components/ui/animate-on-scroll';
 
 const steps = [
   {
@@ -100,41 +101,47 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16 sm:py-24">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <div className="space-y-6 text-center lg:text-left">
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-100">
-              <h1 className="font-headline text-4xl font-bold tracking-tighter text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
-                Selesaikan Semua Urusanmu, <span className="text-primary">Kelar-in Aja!</span>
-              </h1>
-              <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed">
-                Platform terpadu untuk semua kebutuhan jasa Anda. Dari perbaikan rumah hingga pengembangan skill, temukan profesional terbaik di sini.
-              </p>
-            </div>
-            <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
-              <Button asChild size="lg">
-                <Link href="/cari-jasa" className="font-bold">Saya butuh Jasa</Link>
-              </Button>
-              <Button asChild size="lg" variant="secondary">
-                <Link href="/" className="font-bold">Saya tawarkan Jasa</Link>
-              </Button>
-            </div>
+            <AnimateOnScroll animationClassName="animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-100">
+              <div className="space-y-4">
+                <h1 className="font-headline text-4xl font-bold tracking-tighter text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
+                  Selesaikan Semua Urusanmu, <span className="text-primary">Kelar-in Aja!</span>
+                </h1>
+                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed">
+                  Platform terpadu untuk semua kebutuhan jasa Anda. Dari perbaikan rumah hingga pengembangan skill, temukan profesional terbaik di sini.
+                </p>
+              </div>
+            </AnimateOnScroll>
+            <AnimateOnScroll animationClassName="animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
+              <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start">
+                <Button asChild size="lg">
+                  <Link href="/cari-jasa" className="font-bold">Saya butuh Jasa</Link>
+                </Button>
+                <Button asChild size="lg" variant="secondary">
+                  <Link href="/" className="font-bold">Saya tawarkan Jasa</Link>
+                </Button>
+              </div>
+            </AnimateOnScroll>
           </div>
-          <div className="flex items-center justify-center animate-in fade-in zoom-in-90 duration-1000 delay-300">
-            {heroImage && (
-              <Image
-                src={heroImage.imageUrl}
-                alt={heroImage.description}
-                width={800}
-                height={600}
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full"
-                data-ai-hint={heroImage.imageHint}
-              />
-            )}
-          </div>
+           <AnimateOnScroll animationClassName="animate-in fade-in zoom-in-90 duration-1000 delay-300">
+            <div className="flex items-center justify-center">
+              {heroImage && (
+                <Image
+                  src={heroImage.imageUrl}
+                  alt={heroImage.description}
+                  width={800}
+                  height={600}
+                  className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full"
+                  data-ai-hint={heroImage.imageHint}
+                />
+              )}
+            </div>
+          </AnimateOnScroll>
         </div>
       </section>
 
       {/* How it Works Section */}
       <section className="bg-secondary py-20">
-        <div className="container mx-auto px-4 text-center animate-in fade-in slide-in-from-bottom-16 duration-1000">
+        <AnimateOnScroll animationClassName="animate-in fade-in slide-in-from-bottom-16 duration-1000" className="container mx-auto px-4 text-center">
           <h2 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">Cara Kerjanya Mudah</h2>
           <p className="mx-auto mb-12 max-w-2xl text-muted-foreground">Hanya dengan tiga langkah sederhana, masalah Anda langsung beres.</p>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -148,12 +155,12 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </AnimateOnScroll>
       </section>
 
       {/* Popular Services Section */}
       <section className="py-20">
-        <div className="container mx-auto px-4 text-center animate-in fade-in slide-in-from-bottom-16 duration-1000">
+        <AnimateOnScroll animationClassName="animate-in fade-in slide-in-from-bottom-16 duration-1000" className="container mx-auto px-4 text-center">
           <h2 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">Layanan Paling Populer</h2>
           <p className="mx-auto mb-12 max-w-2xl text-muted-foreground">Temukan jasa yang paling banyak dicari oleh pengguna kami.</p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
@@ -175,12 +182,12 @@ export default function Home() {
               </Card>
             ))}
           </div>
-        </div>
+        </AnimateOnScroll>
       </section>
 
       {/* Testimonials Section */}
       <section className="bg-secondary py-20">
-        <div className="container mx-auto px-4 animate-in fade-in slide-in-from-bottom-16 duration-1000">
+        <AnimateOnScroll animationClassName="animate-in fade-in slide-in-from-bottom-16 duration-1000" className="container mx-auto px-4">
           <h2 className="mb-2 text-center text-3xl font-bold tracking-tight sm:text-4xl">Apa Kata Mereka?</h2>
           <p className="mx-auto mb-12 max-w-2xl text-center text-muted-foreground">Cerita sukses dari para pengguna setia KelarApp.</p>
           <Carousel
@@ -216,12 +223,12 @@ export default function Home() {
             <CarouselPrevious />
             <CarouselNext />
           </Carousel>
-        </div>
+        </AnimateOnScroll>
       </section>
       
       {/* Why Choose Us Section */}
       <section className="py-20">
-        <div className="container mx-auto px-4 animate-in fade-in slide-in-from-bottom-16 duration-1000">
+        <AnimateOnScroll animationClassName="animate-in fade-in slide-in-from-bottom-16 duration-1000" className="container mx-auto px-4">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Mengapa Memilih KelarApp?</h2>
@@ -251,7 +258,7 @@ export default function Home() {
               />
             </div>
           </div>
-        </div>
+        </AnimateOnScroll>
       </section>
 
       {/* CTA Section */}
