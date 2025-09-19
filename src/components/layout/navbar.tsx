@@ -23,8 +23,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
 const guestNavLinks = [
-    // { href: '#layanan-populer', label: 'Cari Jasa' },
-    // { href: '#tentang-kami', label: 'Tentang Kami' },
+    { href: '#layanan-populer', label: 'Cari Jasa' },
+    { href: '#tentang-kami', label: 'Tentang Kami' },
 ];
 
 const loggedInNavLinks = [

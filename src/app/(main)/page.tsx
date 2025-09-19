@@ -101,7 +101,7 @@ export default function Home() {
   return (
     <>
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 sm:py-24">
+      <section id="hero" className="container mx-auto px-4 py-16 sm:py-24">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <div className="space-y-6 text-center lg:text-left">
             <AnimateOnScroll animationClassName="animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-100">
@@ -189,7 +189,7 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="bg-secondary py-20">
+      <section id="tentang-kami" className="bg-secondary py-20 scroll-mt-20">
         <AnimateOnScroll animationClassName="animate-in fade-in slide-in-from-bottom-16 duration-1000" className="container mx-auto px-4">
           <h2 className="mb-2 text-center text-3xl font-bold tracking-tight sm:text-4xl">Apa Kata Mereka?</h2>
           <p className="mx-auto mb-12 max-w-2xl text-center text-muted-foreground">Cerita sukses dari para pengguna setia KelarApp.</p>
