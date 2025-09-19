@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Calendar, Tag, Star, User, DollarSign, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { doc, onSnapshot, collection, query, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format, fromUnixTime } from 'date-fns';
@@ -38,6 +38,7 @@ interface Job {
   description: string;
   photoUrl?: string;
   providerId?: string;
+  providerName?: string;
 }
 
 // Interface untuk data penawaran
@@ -80,8 +81,9 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
 
 
   useEffect(() => {
-    if (params.jobId) {
-      const jobDocRef = doc(db, 'jobs', params.jobId);
+    const jobId = params.jobId;
+    if (jobId) {
+      const jobDocRef = doc(db, 'jobs', jobId);
       
       const unsubscribeJob = onSnapshot(jobDocRef, (doc) => {
         if (doc.exists()) {
@@ -101,7 +103,7 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
       });
 
       // Query ke sub-koleksi bids
-      const bidsQuery = query(collection(db, 'jobs', params.jobId, 'bids'));
+      const bidsQuery = query(collection(db, 'jobs', jobId, 'bids'));
       const unsubscribeBids = onSnapshot(bidsQuery, (querySnapshot) => {
         const bidsData = querySnapshot.docs.map(doc => ({
             id: doc.id, // ID dokumen bid ini adalah ID dari provider
