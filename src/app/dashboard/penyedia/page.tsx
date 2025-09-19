@@ -52,10 +52,10 @@ export default function DashboardPenyediaPage() {
 
   useEffect(() => {
     setLoading(true);
+    // Menghapus orderBy dari query untuk menghindari error indeks komposit
     const q = query(
       collection(db, 'jobs'),
-      where('status', '==', 'OPEN'),
-      orderBy('createdAt', 'desc')
+      where('status', '==', 'OPEN')
     );
 
     const unsubscribeFirestore = onSnapshot(q, (querySnapshot) => {
@@ -63,7 +63,15 @@ export default function DashboardPenyediaPage() {
         id: doc.id,
         ...doc.data(),
       })) as Job[];
-      setAvailableJobs(jobsData);
+      
+      // Melakukan sorting di sisi client
+      const sortedJobs = jobsData.sort((a, b) => {
+        const dateA = a.createdAt ? fromUnixTime(a.createdAt.seconds) : new Date(0);
+        const dateB = b.createdAt ? fromUnixTime(b.createdAt.seconds) : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      setAvailableJobs(sortedJobs);
       setLoading(false);
     }, (error) => {
       console.error("Error fetching available jobs: ", error);
