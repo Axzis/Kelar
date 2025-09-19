@@ -15,10 +15,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Calendar, Tag, Star, User, DollarSign, Loader2, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState, use } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { doc, onSnapshot, collection, query, writeBatch } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { format, fromUnixTime } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -74,13 +75,22 @@ const statusDisplay: { [key in Job['status']]: string } = {
 export default function JobDetailPage({ params }: { params: { jobId: string } }) {
   const [jobDetails, setJobDetails] = useState<Job | null>(null);
   const [bidders, setBidders] = useState<Bid[]>([]);
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [biddersLoading, setBiddersLoading] = useState(true);
   const [acceptingBid, setAcceptingBid] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeRecipient, setActiveRecipient] = useState<Bid | null>(null);
   const { toast } = useToast();
   const router = useRouter();
-  const { jobId } = use(params);
+  const { jobId } = params;
+  
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return unsubscribeAuth;
+  }, []);
 
 
   useEffect(() => {
@@ -160,9 +170,6 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
             description: `Anda telah memilih ${bidder.providerName} untuk mengerjakan proyek ini.`,
         });
 
-        // Arahkan kembali ke halaman pekerjaan setelah beberapa saat
-        setTimeout(() => router.push('/dashboard/penyewa/pekerjaan'), 2000);
-
     } catch (error) {
         console.error("Error accepting bid: ", error);
         toast({
@@ -175,6 +182,14 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
     }
   };
 
+  const openChatWith = (recipient: Bid) => {
+    setActiveRecipient(recipient);
+    setIsChatOpen(true);
+  };
+  
+  const generateChatId = (uid1: string, uid2: string) => {
+    return [uid1, uid2].sort().join('_');
+  };
 
   if (loading) {
     return (
@@ -259,7 +274,6 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
                 <CardHeader>
                     <div className="flex items-center gap-4">
                      <Avatar className="h-16 w-16">
-                        {/* Di dunia nyata, Anda akan mengambil data penyedia dari koleksi 'users' */}
                         <AvatarImage src={`https://picsum.photos/seed/${jobDetails.providerId}/100/100`} />
                         <AvatarFallback>{jobDetails.providerName?.charAt(0) ?? 'P'}</AvatarFallback>
                     </Avatar>
@@ -270,7 +284,13 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
                     </div>
                 </CardHeader>
                  <CardFooter>
-                    <Button onClick={() => setIsChatOpen(true)}>
+                    <Button onClick={() => openChatWith({ 
+                        id: jobDetails.providerId!, 
+                        providerName: jobDetails.providerName!, 
+                        providerAvatarUrl: `https://picsum.photos/seed/${jobDetails.providerId}/100/100`,
+                        providerRating: 0,
+                        reviews: 0,
+                    })}>
                         <MessageSquare className="mr-2 h-4 w-4" /> Hubungi
                     </Button>
                 </CardFooter>
@@ -310,7 +330,7 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
                             Profil
                         </Link>
                         </Button>
-                         <Button variant="secondary" className="w-full" onClick={() => setIsChatOpen(true)} disabled={acceptingBid !== null}>
+                         <Button variant="secondary" className="w-full" onClick={() => openChatWith(bidder)} disabled={acceptingBid !== null}>
                             <MessageSquare className="mr-2 h-4 w-4" />
                             Hubungi
                         </Button>
@@ -328,10 +348,19 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
         )}
       </div>
 
-       <ChatPanel 
-        isOpen={isChatOpen} 
-        onClose={() => setIsChatOpen(false)} 
-       />
+       {currentUser && activeRecipient && (
+            <ChatPanel 
+                isOpen={isChatOpen} 
+                onClose={() => setIsChatOpen(false)} 
+                chatId={generateChatId(currentUser.uid, activeRecipient.id)}
+                currentUserId={currentUser.uid}
+                recipient={{
+                    id: activeRecipient.id,
+                    name: activeRecipient.providerName,
+                    avatarUrl: activeRecipient.providerAvatarUrl,
+                }}
+            />
+       )}
     </div>
   );
 }
