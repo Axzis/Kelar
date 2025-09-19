@@ -214,32 +214,32 @@ export default function ProviderProfilePage({ params }: { params: { providerId: 
                         <Card>
                             <CardHeader>
                                 <CardTitle>Galeri Portofolio</CardTitle>
-                                <CardContent className="p-0 pt-6">
-                                {portfolioItems.length > 0 ? (
-                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                    {portfolioItems.map((item) => (
-                                        <div key={item.id} className="group relative overflow-hidden rounded-lg">
-                                        <Image
-                                            src={item.imageUrl}
-                                            alt={item.title}
-                                            width={400}
-                                            height={300}
-                                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                                        <div className="absolute bottom-0 left-0 p-4">
-                                            <h3 className="font-semibold text-white">{item.title}</h3>
-                                        </div>
-                                        </div>
-                                    ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center text-muted-foreground py-10">
-                                    Penyedia jasa ini belum menambahkan portofolio.
-                                    </div>
-                                )}
-                                </CardContent>
                             </CardHeader>
+                            <CardContent className="p-0 pt-6">
+                            {portfolioItems.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                {portfolioItems.map((item) => (
+                                    <div key={item.id} className="group relative overflow-hidden rounded-lg">
+                                    <Image
+                                        src={item.imageUrl}
+                                        alt={item.title}
+                                        width={400}
+                                        height={300}
+                                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                    <div className="absolute bottom-0 left-0 p-4">
+                                        <h3 className="font-semibold text-white">{item.title}</h3>
+                                    </div>
+                                    </div>
+                                ))}
+                                </div>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-10">
+                                Penyedia jasa ini belum menambahkan portofolio.
+                                </div>
+                            )}
+                            </CardContent>
                         </Card>
                     </AnimateOnScroll>
                     
@@ -249,7 +249,7 @@ export default function ProviderProfilePage({ params }: { params: { providerId: 
                         <Card>
                             <CardHeader>
                                 <CardTitle>Ulasan Klien</CardTitle>
-                            </Header>
+                            </CardHeader>
                             <CardContent className="space-y-6">
                                 {staticReviews.map((review, index) => (
                                 <div key={review.id}>
