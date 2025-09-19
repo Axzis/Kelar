@@ -289,9 +289,11 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
                     </div>
                 </CardHeader>
                 <CardFooter className="flex gap-2">
-                    <Button variant="outline" className="w-full" disabled={acceptingBid !== null}>
-                      <User className="mr-2 h-4 w-4" />
-                      Lihat Profil
+                    <Button variant="outline" className="w-full" asChild disabled={acceptingBid !== null}>
+                      <Link href={`/penyedia/${bidder.id}`}>
+                        <User className="mr-2 h-4 w-4" />
+                        Lihat Profil
+                      </Link>
                     </Button>
                     <Button 
                         className="w-full" 
