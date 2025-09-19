@@ -72,7 +72,7 @@ const statusDisplay: { [key in Job['status']]: string } = {
 };
 
 
-export default function JobDetailPage({ params }: { params: { jobId: string } }) {
+export default function JobDetailPage() {
   const [jobDetails, setJobDetails] = useState<Job | null>(null);
   const [bidders, setBidders] = useState<Bid[]>([]);
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
@@ -83,7 +83,8 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
   const [activeRecipient, setActiveRecipient] = useState<Bid | null>(null);
   const { toast } = useToast();
   const router = useRouter();
-  const { jobId } = params;
+  const params = useParams();
+  const jobId = params.jobId as string;
   
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
