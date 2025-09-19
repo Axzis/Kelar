@@ -79,10 +79,12 @@ export default function DashboardPenyewaPage() {
   useEffect(() => {
     if (currentUser) {
       setLoading(true);
+      // Kueri disederhanakan untuk menghindari galat indeks.
+      // TODO: Buat indeks komposit di Firestore (hirerId asc, createdAt desc) dan kembalikan orderBy.
       const q = query(
         collection(db, 'jobs'),
-        where('hirerId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
+        where('hirerId', '==', currentUser.uid)
+        // orderBy('createdAt', 'desc') // Sementara dinonaktifkan
       );
 
       const unsubscribeFirestore = onSnapshot(q, (querySnapshot) => {
@@ -90,6 +92,15 @@ export default function DashboardPenyewaPage() {
           id: doc.id,
           ...doc.data(),
         })) as Job[];
+        
+        // Lakukan pengurutan di sisi klien sebagai solusi sementara
+        jobsData.sort((a, b) => {
+            if (a.createdAt && b.createdAt) {
+                return b.createdAt.seconds - a.createdAt.seconds;
+            }
+            return 0;
+        });
+
         setJobs(jobsData);
         setLoading(false);
       }, (error) => {
@@ -100,6 +111,7 @@ export default function DashboardPenyewaPage() {
       return () => unsubscribeFirestore();
     } else {
       setJobs([]); // Clear jobs if user logs out
+      setLoading(false);
     }
   }, [currentUser]);
 
@@ -180,7 +192,7 @@ export default function DashboardPenyewaPage() {
                     <TableHead>Penyedia Jasa</TableHead>
                     <TableHead>Tanggal</TableHead>
                     <TableHead className="text-right">Biaya</TableHead>
-                    </TableRow>
+                    </tr >
                 </TableHeader>
                 <TableBody>
                     {jobs.length > 0 ? jobs.map((job) => (
