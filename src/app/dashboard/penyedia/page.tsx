@@ -18,13 +18,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { GalleryVertical, DollarSign, Star, PackageOpen, Loader2, Check, Eye } from 'lucide-react';
+import { GalleryVertical, DollarSign, Star, PackageOpen, Loader2, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { fromUnixTime } from 'date-fns';
@@ -210,11 +210,6 @@ export default function DashboardPenyediaPage() {
     if (!date) return '-';
     return formatDistanceToNow(fromUnixTime(date.seconds), { addSuffix: true, locale: id });
   };
-  
-    const formatDate = (timestamp: Timestamp | null) => {
-    if (!timestamp) return '-';
-    return format(timestamp.toDate(), 'd MMM yyyy, HH:mm', { locale: id });
-  };
 
 
   return (
@@ -342,61 +337,7 @@ export default function DashboardPenyediaPage() {
              )}
           </CardContent>
         </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Status Tawaran Saya</CardTitle>
-                <CardDescription>Lacak semua tawaran yang telah Anda kirimkan untuk berbagai pekerjaan.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {myBidsLoading ? (
-                    <div className="flex justify-center items-center h-40">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Judul Pekerjaan</TableHead>
-                                <TableHead>Tanggal Tawaran</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Aksi</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {myBids.length > 0 ? myBids.map((bid) => (
-                                <TableRow key={bid.id}>
-                                    <TableCell className="font-medium">{bid.jobTitle}</TableCell>
-                                    <TableCell>{formatDate(bid.createdAt)}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={statusVariant[bid.status] || 'outline'}>
-                                            {statusDisplay[bid.status] || bid.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="outline" size="sm" asChild>
-                                            <Link href={`/dashboard/penyewa/pekerjaan/${bid.jobId}`}>
-                                                <Eye className="mr-2 h-4 w-4" />
-                                                Lihat Detail
-                                            </Link>
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="text-center h-24">
-                                        Anda belum pernah mengirimkan tawaran.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                )}
-            </CardContent>
-        </Card>
-
       </div>
     </div>
   );
-
     
