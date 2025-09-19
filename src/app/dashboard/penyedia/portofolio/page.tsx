@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -12,7 +12,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, MoreVertical, Edit, Trash2, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import {
   DropdownMenu,
@@ -21,37 +21,111 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { PortfolioModal } from '@/components/dashboard/penyedia/portfolio-modal';
+import { auth, db, storage } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { collection, query, onSnapshot, orderBy, doc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
-// Data placeholder untuk portofolio
-const portfolioItems = [
-  {
-    id: 'folio1',
-    title: 'Renovasi Dapur Modern',
-    description: 'Proyek renovasi dapur lengkap dengan instalasi kabinet kustom dan countertop granit di area Jakarta Selatan.',
-    imageUrl: 'https://picsum.photos/seed/kitchen-reno/400/300',
-    category: 'Jasa Tukang',
-    date: '2023-10-15',
-  },
-  {
-    id: 'folio2',
-    title: 'Logo & Branding Kopi Rindang',
-    description: 'Desain logo dan materi branding untuk kedai kopi lokal, mencakup desain menu, kemasan, dan media sosial.',
-    imageUrl: 'https://picsum.photos/seed/coffee-brand/400/300',
-    category: 'Desain & Kreatif',
-    date: '2023-09-22',
-  },
-  {
-    id: 'folio3',
-    title: 'Taman Vertikal Balkon Apartemen',
-    description: 'Pemasangan taman vertikal untuk memaksimalkan ruang hijau di balkon apartemen tipe studio.',
-    imageUrl: 'https://picsum.photos/seed/vertical-garden/400/300',
-    category: 'Jasa Kebersihan', // Placeholder, mungkin butuh kategori "Tukang Kebun"
-    date: '2023-08-01',
-  },
-];
+interface PortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  category: string;
+  filePath: string;
+  createdAt: Timestamp;
+}
 
 export default function PortfolioPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [itemToDelete, setItemToDelete] = useState<PortfolioItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const q = query(
+      collection(db, 'users', currentUser.uid, 'portfolioItems'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as PortfolioItem[];
+      setPortfolioItems(items);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching portfolio items: ", error);
+      setLoading(false);
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Memuat Portofolio',
+        description: 'Terjadi kesalahan saat mengambil data portofolio Anda.',
+      });
+    });
+
+    return () => unsubscribe();
+  }, [currentUser, toast]);
+
+  const handleDeletePortfolio = async () => {
+    if (!itemToDelete || !currentUser) return;
+
+    setIsDeleting(true);
+    try {
+      // 1. Hapus Dokumen Firestore
+      const docRef = doc(db, 'users', currentUser.uid, 'portfolioItems', itemToDelete.id);
+      await deleteDoc(docRef);
+
+      // 2. Hapus File di Storage
+      const fileRef = ref(storage, itemToDelete.filePath);
+      await deleteObject(fileRef);
+
+      toast({
+        title: 'Portofolio Dihapus',
+        description: `"${itemToDelete.title}" telah berhasil dihapus.`,
+      });
+
+    } catch (error) {
+      console.error("Error deleting portfolio item: ", error);
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Menghapus',
+        description: 'Terjadi kesalahan saat mencoba menghapus item portofolio.',
+      });
+    } finally {
+      setIsDeleting(false);
+      setItemToDelete(null);
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -72,11 +146,15 @@ export default function PortfolioPage() {
       </div>
 
       {/* Daftar Portofolio */}
-      {portfolioItems.length > 0 ? (
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : portfolioItems.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {portfolioItems.map((item) => (
             <Card key={item.id} className="flex flex-col">
-              <CardHeader>
+              <CardHeader className="p-0">
                 <div className="relative h-48 w-full">
                   <Image
                     src={item.imageUrl}
@@ -87,14 +165,14 @@ export default function PortfolioPage() {
                   />
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 space-y-2">
+              <CardContent className="flex-1 space-y-2 p-4">
                 <Badge variant="secondary">{item.category}</Badge>
                 <CardTitle className="text-lg">{item.title}</CardTitle>
                 <CardDescription>{item.description}</CardDescription>
               </CardContent>
-              <CardFooter className="flex justify-between items-center">
+              <CardFooter className="flex justify-between items-center p-4">
                  <p className="text-sm text-muted-foreground">
-                    Selesai: {new Date(item.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long' })}
+                    Dibuat: {item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('id-ID') : 'N/A'}
                 </p>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -103,11 +181,11 @@ export default function PortfolioPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
+                    <DropdownMenuItem disabled>
                       <Edit className="mr-2 h-4 w-4" />
                       <span>Edit</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
+                    <DropdownMenuItem className="text-destructive" onClick={() => setItemToDelete(item)}>
                       <Trash2 className="mr-2 h-4 w-4" />
                       <span>Hapus</span>
                     </DropdownMenuItem>
@@ -128,6 +206,28 @@ export default function PortfolioPage() {
         </Card>
       )}
        <PortfolioModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} />
+
+       {/* Alert Dialog for Deletion */}
+        <AlertDialog open={itemToDelete !== null} onOpenChange={(open) => !open && setItemToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Tindakan ini tidak dapat dibatalkan. Ini akan menghapus item portofolio secara permanen dari server kami.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setItemToDelete(null)} disabled={isDeleting}>Batal</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeletePortfolio} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
+                </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
     </div>
   );
 }
+
+    

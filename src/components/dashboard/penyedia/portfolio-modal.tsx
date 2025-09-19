@@ -23,9 +23,13 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Camera, Loader2 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { auth, db, storage } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 type PortfolioModalProps = {
   children?: React.ReactNode;
@@ -41,7 +45,15 @@ export function PortfolioModal({ children, isOpen, onOpenChange }: PortfolioModa
     const [photo, setPhoto] = useState<File | null>(null);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const { toast } = useToast();
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+        });
+        return () => unsubscribe();
+    }, []);
 
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -61,22 +73,55 @@ export function PortfolioModal({ children, isOpen, onOpenChange }: PortfolioModa
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (!photo || !currentUser) {
+            toast({
+                variant: 'destructive',
+                title: 'Gagal',
+                description: 'Foto proyek dan login diperlukan untuk menambah portofolio.',
+            });
+            return;
+        }
+
         setLoading(true);
 
-        // TODO: Ganti dengan logika simpan ke Firestore
-        console.log({ title, category, description, photo });
+        try {
+            // 1. Upload ke Firebase Storage
+            const filePath = `portfolio/${currentUser.uid}/${Date.now()}-${photo.name}`;
+            const storageRef = ref(storage, filePath);
+            await uploadBytes(storageRef, photo);
 
-        // Simulasi proses async
-        await new Promise(resolve => setTimeout(resolve, 1500));
+            // 2. Dapatkan URL Unduhan
+            const imageUrl = await getDownloadURL(storageRef);
 
-        toast({
-            title: 'Portofolio Ditambahkan!',
-            description: 'Item baru telah berhasil ditambahkan ke portofolio Anda.',
-        });
-        
-        setLoading(false);
-        resetForm();
-        onOpenChange(false); // Tutup modal
+            // 3. Simpan Metadata ke Firestore
+            const portfolioCollectionRef = collection(db, 'users', currentUser.uid, 'portfolioItems');
+            await addDoc(portfolioCollectionRef, {
+                title,
+                category,
+                description,
+                imageUrl,
+                filePath, // Simpan path file untuk penghapusan nanti
+                createdAt: serverTimestamp(),
+            });
+
+            toast({
+                title: 'Portofolio Ditambahkan!',
+                description: 'Item baru telah berhasil ditambahkan ke portofolio Anda.',
+            });
+            
+            resetForm();
+            onOpenChange(false); // Tutup modal
+
+        } catch (error) {
+            console.error('Error adding portfolio item: ', error);
+            toast({
+                variant: 'destructive',
+                title: 'Gagal Menambahkan Portofolio',
+                description: 'Terjadi kesalahan saat menyimpan data Anda.',
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -101,10 +146,10 @@ export function PortfolioModal({ children, isOpen, onOpenChange }: PortfolioModa
                         <div className="col-span-3">
                             <label
                                 htmlFor="dropzone-file"
-                                className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted"
+                                className="relative flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted"
                             >
                                 {photoPreview ? (
-                                    <Image src={photoPreview} alt="Pratinjau foto" layout="fill" objectFit="contain" className="p-2 rounded-lg" />
+                                    <Image src={photoPreview} alt="Pratinjau foto" fill objectFit="contain" className="p-2 rounded-lg" />
                                 ) : (
                                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                         <Camera className="w-8 h-8 mb-2 text-muted-foreground" />
@@ -138,6 +183,7 @@ export function PortfolioModal({ children, isOpen, onOpenChange }: PortfolioModa
                                 <SelectItem value="Jasa Angkut">Jasa Angkut</SelectItem>
                                 <SelectItem value="Desain & Kreatif">Desain & Kreatif</SelectItem>
                                 <SelectItem value="Les Privat">Les Privat</SelectItem>
+                                <SelectItem value="Lainnya">Lainnya</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -163,7 +209,7 @@ export function PortfolioModal({ children, isOpen, onOpenChange }: PortfolioModa
                         Batal
                     </Button>
                 </DialogClose>
-                <Button type="submit" form="portfolio-form" disabled={loading}>
+                <Button type="submit" form="portfolio-form" disabled={loading || !photo}>
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {loading ? 'Menyimpan...' : 'Simpan Portofolio'}
                 </Button>
@@ -173,3 +219,4 @@ export function PortfolioModal({ children, isOpen, onOpenChange }: PortfolioModa
     );
 }
 
+    
