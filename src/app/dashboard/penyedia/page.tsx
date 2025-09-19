@@ -123,8 +123,7 @@ export default function DashboardPenyediaPage() {
     setMyBidsLoading(true);
     const myBidsQuery = query(
         collectionGroup(db, 'bids'),
-        where('providerId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
+        where('providerId', '==', currentUser.uid)
     );
 
     const unsubscribeBids = onSnapshot(myBidsQuery, (querySnapshot) => {
@@ -132,7 +131,14 @@ export default function DashboardPenyediaPage() {
             id: doc.id,
             ...doc.data(),
         })) as Bid[];
-        setMyBids(bidsData);
+
+        const sortedBids = bidsData.sort((a, b) => {
+            const dateA = a.createdAt ? fromUnixTime(a.createdAt.seconds) : new Date(0);
+            const dateB = b.createdAt ? fromUnixTime(b.createdAt.seconds) : new Date(0);
+            return dateB.getTime() - dateA.getTime();
+        });
+
+        setMyBids(sortedBids);
         setMyBidsLoading(false);
     }, (error) => {
         console.error("Error fetching my bids: ", error);
@@ -383,5 +389,7 @@ export default function DashboardPenyediaPage() {
       </div>
     </div>
   );
+
+    
 
     
