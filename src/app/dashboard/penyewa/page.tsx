@@ -28,6 +28,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { format, fromUnixTime } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Interface untuk mendefinisikan struktur data pekerjaan
 interface Job {
@@ -66,6 +67,7 @@ export default function DashboardPenyewaPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   // Efek untuk memantau status otentikasi pengguna
   useEffect(() => {
@@ -201,19 +203,17 @@ export default function DashboardPenyewaPage() {
                 </TableHeader>
                 <TableBody>
                   {jobs.length > 0 ? jobs.map((job) => (
-                    <Link href={`/dashboard/penyewa/pekerjaan/${job.id}`} key={job.id} passHref legacyBehavior>
-                        <TableRow component="a" className="cursor-pointer hover:bg-muted/50">
-                            <TableCell className="font-medium">{job.title}</TableCell>
-                            <TableCell>
-                                <Badge variant={statusVariant[job.status] || 'default'}>{statusDisplay[job.status] || 'Tidak Diketahui'}</Badge>
-                            </TableCell>
-                            <TableCell>{job.provider || '-'}</TableCell>
-                            <TableCell>{job.createdAt ? format(fromUnixTime(job.createdAt.seconds), 'd MMM yyyy', { locale: id }) : '-'}</TableCell>
-                            <TableCell className="text-right">
-                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(job.budget)}
-                            </TableCell>
-                        </TableRow>
-                    </Link>
+                    <TableRow key={job.id} onClick={() => router.push(`/dashboard/penyewa/pekerjaan/${job.id}`)} className="cursor-pointer hover:bg-muted/50">
+                        <TableCell className="font-medium">{job.title}</TableCell>
+                        <TableCell>
+                            <Badge variant={statusVariant[job.status] || 'default'}>{statusDisplay[job.status] || 'Tidak Diketahui'}</Badge>
+                        </TableCell>
+                        <TableCell>{job.provider || '-'}</TableCell>
+                        <TableCell>{job.createdAt ? format(fromUnixTime(job.createdAt.seconds), 'd MMM yyyy', { locale: id }) : '-'}</TableCell>
+                        <TableCell className="text-right">
+                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(job.budget)}
+                        </TableCell>
+                    </TableRow>
                   )) : (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center h-24">
@@ -230,12 +230,3 @@ export default function DashboardPenyewaPage() {
     </div>
   );
 }
-
-// Custom TableRow that can accept an `href` and render as an `a` tag
-const TableRowLink = React.forwardRef<
-    HTMLTableRowElement,
-    React.HTMLAttributes<HTMLTableRowElement> & { component?: React.ElementType; href?: string }
->(({ component: Component = 'tr', ...props }, ref) => {
-    return <Component ref={ref} {...props} />;
-});
-TableRowLink.displayName = 'TableRowLink';
