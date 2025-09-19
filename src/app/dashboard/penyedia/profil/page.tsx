@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -27,14 +27,19 @@ import {
 } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Placeholder data
-const userProfile = {
-  name: 'Penyedia Jasa Pro',
-  specialization: 'Tukang AC, Spesialis Listrik, Renovasi Atap',
-  bio: 'Saya adalah seorang profesional dengan pengalaman lebih dari 10 tahun di bidang perbaikan dan instalasi. Keahlian utama saya adalah perbaikan AC, instalasi listrik, dan renovasi atap. Saya berkomitmen untuk memberikan layanan terbaik dengan hasil yang memuaskan dan tahan lama. Kepuasan pelanggan adalah prioritas utama saya.',
-  avatarUrl: 'https://picsum.photos/seed/provider-avatar/200/200',
-};
+
+// Interface untuk data profil
+interface Profile {
+  nama: string;
+  spesialisasi: string;
+  bio: string;
+  avatarUrl: string;
+}
 
 const portfolioItems = [
   { id: 'p1', imageUrl: 'https://picsum.photos/seed/portfolio1/400/300' },
@@ -47,22 +52,73 @@ export default function ProfilePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [profile, setProfile] = useState<Profile>({ nama: '', spesialisasi: '', bio: '', avatarUrl: '' });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleSaveChanges = (e: React.FormEvent) => {
+   // Get current user
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch profile data
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (currentUser) {
+        setLoading(true);
+        const docRef = doc(db, 'users', currentUser.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setProfile({
+            nama: data.nama || '',
+            spesialisasi: data.spesialisasi || '',
+            bio: data.bio || '',
+            avatarUrl: data.photoURL || `https://picsum.photos/seed/${currentUser.uid}/200/200`,
+          });
+        }
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, [currentUser]);
+
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) return;
+
     setIsSaving(true);
-    // Simulasi proses penyimpanan
-    setTimeout(() => {
-        setIsSaving(false);
-        toast({
-            title: 'Profil Diperbarui',
-            description: 'Perubahan pada profil Anda telah berhasil disimpan.',
-        });
-    }, 1500);
+    const userDocRef = doc(db, 'users', currentUser.uid);
+
+    try {
+      await updateDoc(userDocRef, {
+        spesialisasi: profile.spesialisasi,
+        bio: profile.bio,
+      });
+      toast({
+        title: 'Profil Diperbarui',
+        description: 'Perubahan pada profil Anda telah berhasil disimpan.',
+      });
+    } catch (error) {
+      console.error('Error updating profile: ', error);
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Memperbarui Profil',
+        description: 'Terjadi kesalahan saat menyimpan data Anda.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
   
-    const handleUploadPortfolio = (e: React.FormEvent) => {
+  const handleUploadPortfolio = (e: React.FormEvent) => {
     e.preventDefault();
     setIsUploading(true);
     // Simulasi proses upload
@@ -89,7 +145,7 @@ export default function ProfilePage() {
 
       {/* Bagian Informasi Profil */}
       <Card>
-        <form onSubmit={handleSaveChanges}>
+        <form onSubmit={handleProfileUpdate}>
             <CardHeader>
             <CardTitle>Informasi Profil</CardTitle>
             <CardDescription>
@@ -97,42 +153,69 @@ export default function ProfilePage() {
             </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-            <div className="flex items-center gap-6">
-                <Avatar className="h-24 w-24">
-                <AvatarImage src={userProfile.avatarUrl} alt={userProfile.name} />
-                <AvatarFallback>{userProfile.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <Button type="button" variant="outline">
-                <Camera className="mr-2 h-4 w-4" />
-                Ubah Foto
-                </Button>
-            </div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="space-y-2">
-                <Label htmlFor="fullName">Nama Lengkap</Label>
-                <Input id="fullName" defaultValue={userProfile.name} disabled />
+            {loading ? (
+                <div className="space-y-6">
+                    <div className="flex items-center gap-6">
+                        <Skeleton className="h-24 w-24 rounded-full" />
+                        <Skeleton className="h-10 w-28" />
+                    </div>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                         <div className="space-y-2">
+                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
                 </div>
-                <div className="space-y-2">
-                <Label htmlFor="specialization">Spesialisasi</Label>
-                <Input
-                    id="specialization"
-                    placeholder="Contoh: Tukang AC, Desain Grafis"
-                    defaultValue={userProfile.specialization}
-                />
-                </div>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="bio">Tentang Saya (Bio)</Label>
-                <Textarea
-                id="bio"
-                rows={5}
-                placeholder="Ceritakan tentang keahlian dan pengalaman Anda..."
-                defaultValue={userProfile.bio}
-                />
-            </div>
+            ) : (
+                <>
+                    <div className="flex items-center gap-6">
+                        <Avatar className="h-24 w-24">
+                        <AvatarImage src={profile.avatarUrl} alt={profile.nama} />
+                        <AvatarFallback>{profile.nama.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <Button type="button" variant="outline">
+                        <Camera className="mr-2 h-4 w-4" />
+                        Ubah Foto
+                        </Button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div className="space-y-2">
+                        <Label htmlFor="fullName">Nama Lengkap</Label>
+                        <Input id="fullName" value={profile.nama} disabled />
+                        </div>
+                        <div className="space-y-2">
+                        <Label htmlFor="specialization">Spesialisasi</Label>
+                        <Input
+                            id="specialization"
+                            placeholder="Contoh: Tukang AC, Desain Grafis"
+                            value={profile.spesialisasi}
+                            onChange={(e) => setProfile({...profile, spesialisasi: e.target.value})}
+                        />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="bio">Tentang Saya (Bio)</Label>
+                        <Textarea
+                        id="bio"
+                        rows={5}
+                        placeholder="Ceritakan tentang keahlian dan pengalaman Anda..."
+                        value={profile.bio}
+                        onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                        />
+                    </div>
+                </>
+            )}
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
-            <Button type="submit" disabled={isSaving}>
+            <Button type="submit" disabled={isSaving || loading}>
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSaving ? 'Menyimpan...' : 'Simpan Perubahan Profil'}
             </Button>
