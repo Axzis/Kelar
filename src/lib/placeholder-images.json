@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-landing",
+      "description": "A person happily using a service on their laptop, representing tasks getting done.",
+      "imageUrl": "https://picsum.photos/seed/kelar-hero/800/600",
+      "imageHint": "person laptop"
+    }
+  ]
 }
