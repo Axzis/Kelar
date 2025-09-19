@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -19,31 +18,28 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Activity, DollarSign, Loader2 } from 'lucide-react';
-import Link from 'next/link';
 import { CreateRequestModal } from '@/components/dashboard/penyewa/create-request-modal';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { format, fromUnixTime } from 'date-fns';
 import { id } from 'date-fns/locale';
 
-
 interface Job {
   id: string;
   title: string;
   hirerName: string;
-  status: string;
+  status: 'SELESAI' | 'DALAM PENGERJAAN' | 'MENUNGGU PEMBAYARAN' | 'DIBATALKAN' | 'OPEN';
   createdAt: {
     seconds: number;
     nanoseconds: number;
   };
   budget: number;
-  provider?: string; // Asumsi penyedia akan ditambahkan nanti
+  provider?: string;
 }
 
-
-const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
+const statusVariant: { [key in Job['status']]: "default" | "secondary" | "destructive" | "outline" } = {
   'SELESAI': 'default',
   'DALAM PENGERJAAN': 'secondary',
   'MENUNGGU PEMBAYARAN': 'outline',
@@ -51,14 +47,13 @@ const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | 
   'OPEN': 'secondary',
 };
 
-const statusDisplay: { [key: string]: string } = {
+const statusDisplay: { [key in Job['status']]: string } = {
     'SELESAI': 'Selesai',
     'DALAM PENGERJAAN': 'Dalam Pengerjaan',
     'MENUNGGU PEMBAYARAN': 'Menunggu Pembayaran',
     'DIBATALKAN': 'Dibatalkan',
     'OPEN': 'Mencari Penyedia',
 };
-
 
 export default function DashboardPenyewaPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,9 +64,6 @@ export default function DashboardPenyewaPage() {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
-      if (!user) {
-        setLoading(false);
-      }
     });
     return () => unsubscribeAuth();
   }, []);
@@ -79,12 +71,9 @@ export default function DashboardPenyewaPage() {
   useEffect(() => {
     if (currentUser) {
       setLoading(true);
-      // Kueri disederhanakan untuk menghindari galat indeks.
-      // TODO: Buat indeks komposit di Firestore (hirerId asc, createdAt desc) dan kembalikan orderBy.
       const q = query(
         collection(db, 'jobs'),
         where('hirerId', '==', currentUser.uid)
-        // orderBy('createdAt', 'desc') // Sementara dinonaktifkan
       );
 
       const unsubscribeFirestore = onSnapshot(q, (querySnapshot) => {
@@ -93,13 +82,7 @@ export default function DashboardPenyewaPage() {
           ...doc.data(),
         })) as Job[];
         
-        // Lakukan pengurutan di sisi klien sebagai solusi sementara
-        jobsData.sort((a, b) => {
-            if (a.createdAt && b.createdAt) {
-                return b.createdAt.seconds - a.createdAt.seconds;
-            }
-            return 0;
-        });
+        jobsData.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
 
         setJobs(jobsData);
         setLoading(false);
@@ -110,14 +93,20 @@ export default function DashboardPenyewaPage() {
 
       return () => unsubscribeFirestore();
     } else {
-      setJobs([]); // Clear jobs if user logs out
+      setJobs([]);
       setLoading(false);
     }
   }, [currentUser]);
 
-  const activeJobsCount = jobs.filter(job => job.status === 'DALAM PENGERJAAN' || job.status === 'MENUNGGU PEMBAYARAN').length;
-  const totalSpending = jobs.filter(job => job.status === 'SELESAI').reduce((sum, job) => sum + job.budget, 0);
+  const activeJobsCount = useMemo(() => 
+    jobs.filter(job => job.status === 'DALAM PENGERJAAN' || job.status === 'MENUNGGU PEMBAYARAN').length,
+    [jobs]
+  );
 
+  const totalSpending = useMemo(() => 
+    jobs.filter(job => job.status === 'SELESAI').reduce((sum, job) => sum + job.budget, 0),
+    [jobs]
+  );
 
   return (
     <div className="space-y-8">
@@ -147,7 +136,7 @@ export default function DashboardPenyewaPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeJobsCount}</div>
+            <div className="text-2xl font-bold">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : activeJobsCount}</div>
             <p className="text-xs text-muted-foreground">
               Total pekerjaan yang sedang berjalan.
             </p>
@@ -162,7 +151,7 @@ export default function DashboardPenyewaPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalSpending)}
+                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalSpending)}
             </div>
             <p className="text-xs text-muted-foreground">
               Total dari semua pekerjaan yang selesai.
