@@ -21,10 +21,10 @@ import { Badge } from '@/components/ui/badge';
 import { GalleryVertical, DollarSign, Star, PackageOpen, Loader2, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, setDoc, Timestamp, collectionGroup, orderBy } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { fromUnixTime } from 'date-fns';
@@ -41,17 +41,39 @@ interface Job {
   };
 }
 
+interface Bid {
+    id: string;
+    jobTitle: string;
+    status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+    createdAt: Timestamp;
+}
+
+
 interface BidStatus {
   [jobId: string]: boolean;
 }
+
+const statusVariant: { [key in Bid['status']]: "default" | "secondary" | "destructive" | "outline" } = {
+  'ACCEPTED': 'default',
+  'PENDING': 'secondary',
+  'REJECTED': 'destructive',
+};
+
+const statusDisplay: { [key in Bid['status']]: string } = {
+    'ACCEPTED': 'Diterima',
+    'PENDING': 'Menunggu Respon',
+    'REJECTED': 'Ditolak',
+};
 
 
 export default function DashboardPenyediaPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
-  const [myBids, setMyBids] = useState<BidStatus>({});
+  const [biddingStatus, setBiddingStatus] = useState<BidStatus>({});
   const [biddingJobId, setBiddingJobId] = useState<string | null>(null);
+  const [myBids, setMyBids] = useState<Bid[]>([]);
+  const [myBidsLoading, setMyBidsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -64,16 +86,18 @@ export default function DashboardPenyediaPage() {
   useEffect(() => {
     if (!currentUser) {
       setLoading(false);
+      setMyBidsLoading(false);
       return;
     };
     
+    // === Fetch Available Jobs ===
     setLoading(true);
-    const q = query(
+    const jobsQuery = query(
       collection(db, 'jobs'),
       where('status', '==', 'OPEN')
     );
 
-    const unsubscribeFirestore = onSnapshot(q, async (querySnapshot) => {
+    const unsubscribeJobs = onSnapshot(jobsQuery, async (querySnapshot) => {
       const jobsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -82,24 +106,44 @@ export default function DashboardPenyediaPage() {
       const sortedJobs = jobsData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
       setAvailableJobs(sortedJobs);
 
-      // Check for existing bids
       const bidStatus: BidStatus = {};
       for (const job of sortedJobs) {
         const bidDocRef = doc(db, 'jobs', job.id, 'bids', currentUser.uid);
         const bidDoc = await getDoc(bidDocRef);
-        if (bidDoc.exists()) {
-          bidStatus[job.id] = true;
-        }
+        bidStatus[job.id] = bidDoc.exists();
       }
-      setMyBids(bidStatus);
-
+      setBiddingStatus(bidStatus);
       setLoading(false);
     }, (error) => {
       console.error("Error fetching available jobs: ", error);
       setLoading(false);
     });
 
-    return () => unsubscribeFirestore();
+    // === Fetch My Bids using Collection Group Query ===
+    setMyBidsLoading(true);
+    const myBidsQuery = query(
+        collectionGroup(db, 'bids'),
+        where('providerId', '==', currentUser.uid),
+        orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribeBids = onSnapshot(myBidsQuery, (querySnapshot) => {
+        const bidsData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        })) as Bid[];
+        setMyBids(bidsData);
+        setMyBidsLoading(false);
+    }, (error) => {
+        console.error("Error fetching my bids: ", error);
+        setMyBidsLoading(false);
+    });
+
+
+    return () => {
+      unsubscribeJobs();
+      unsubscribeBids();
+    };
   }, [currentUser]);
 
 
@@ -116,7 +160,6 @@ export default function DashboardPenyediaPage() {
     setBiddingJobId(job.id);
 
     try {
-      // 1. Get provider data
       const userDocRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userDocRef);
 
@@ -125,23 +168,20 @@ export default function DashboardPenyediaPage() {
       }
       const userData = userDoc.data();
 
-      // 2. Create bid document reference
       const bidDocRef = doc(db, 'jobs', job.id, 'bids', currentUser.uid);
 
-      // 3. Denormalize data and set it
       await setDoc(bidDocRef, {
         providerId: currentUser.uid,
         providerName: userData.nama || 'Tanpa Nama',
-        providerRating: 4.8, // Placeholder rating
-        providerAvatarUrl: userData.photoURL || `https://picsum.photos/seed/${currentUser.uid}/100/100`, // Placeholder avatar
-        reviews: 15, // Placeholder review count
+        providerRating: 4.8, 
+        providerAvatarUrl: userData.photoURL || `https://picsum.photos/seed/${currentUser.uid}/100/100`,
+        reviews: 15,
         createdAt: Timestamp.now(),
-        jobTitle: job.title, // TAMBAHAN
-        status: 'PENDING', // TAMBAHAN
+        jobTitle: job.title,
+        status: 'PENDING',
       });
 
-      // 4. Update local state and give feedback
-      setMyBids(prev => ({ ...prev, [job.id]: true }));
+      setBiddingStatus(prev => ({ ...prev, [job.id]: true }));
       toast({
         title: 'Tawaran Terkirim!',
         description: 'Anda telah berhasil memberikan penawaran untuk pekerjaan ini.',
@@ -164,6 +204,12 @@ export default function DashboardPenyediaPage() {
     if (!date) return '-';
     return formatDistanceToNow(fromUnixTime(date.seconds), { addSuffix: true, locale: id });
   };
+  
+    const formatDate = (timestamp: Timestamp | null) => {
+    if (!timestamp) return '-';
+    return format(timestamp.toDate(), 'd MMM yyyy, HH:mm', { locale: id });
+  };
+
 
   return (
     <div className="space-y-8">
@@ -221,15 +267,15 @@ export default function DashboardPenyediaPage() {
             <PackageOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{myBids.filter(bid => bid.status === 'PENDING').length}</div>
             <p className="text-xs text-muted-foreground">
-                Data belum tersedia
+                Total tawaran yang menunggu respon
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <div>
+      <div className="space-y-8">
         <Card>
           <CardHeader>
             <CardTitle>Daftar Pekerjaan Baru yang Tersedia</CardTitle>
@@ -264,17 +310,17 @@ export default function DashboardPenyediaPage() {
                         <TableCell>{formatPostedDate(job.createdAt)}</TableCell>
                         <TableCell className="text-right">
                            <Button
-                                variant={myBids[job.id] ? 'secondary' : 'default'}
+                                variant={biddingStatus[job.id] ? 'secondary' : 'default'}
                                 size="sm"
                                 onClick={() => handleBid(job)}
-                                disabled={myBids[job.id] || biddingJobId === job.id}
+                                disabled={biddingStatus[job.id] || biddingJobId === job.id}
                             >
                                 {biddingJobId === job.id ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : myBids[job.id] ? (
+                                ) : biddingStatus[job.id] ? (
                                     <Check className="mr-2 h-4 w-4" />
                                 ) : null}
-                                {biddingJobId === job.id ? 'Mengirim...' : myBids[job.id] ? 'Tawaran Terkirim' : 'Berikan Penawaran'}
+                                {biddingJobId === job.id ? 'Mengirim...' : biddingStatus[job.id] ? 'Tawaran Terkirim' : 'Berikan Penawaran'}
                             </Button>
                         </TableCell>
                     </TableRow>
@@ -290,9 +336,52 @@ export default function DashboardPenyediaPage() {
              )}
           </CardContent>
         </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Status Tawaran Saya</CardTitle>
+                <CardDescription>Lacak semua tawaran yang telah Anda kirimkan untuk berbagai pekerjaan.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {myBidsLoading ? (
+                    <div className="flex justify-center items-center h-40">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Judul Pekerjaan</TableHead>
+                                <TableHead>Tanggal Tawaran</TableHead>
+                                <TableHead>Status</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {myBids.length > 0 ? myBids.map((bid) => (
+                                <TableRow key={bid.id}>
+                                    <TableCell className="font-medium">{bid.jobTitle}</TableCell>
+                                    <TableCell>{formatDate(bid.createdAt)}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={statusVariant[bid.status] || 'outline'}>
+                                            {statusDisplay[bid.status] || bid.status}
+                                        </Badge>
+                                    </TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-center h-24">
+                                        Anda belum pernah mengirimkan tawaran.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                )}
+            </CardContent>
+        </Card>
+
       </div>
     </div>
   );
-}
 
     
