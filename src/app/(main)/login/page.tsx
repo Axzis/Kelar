@@ -19,8 +19,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
-import { Navbar } from '@/components/layout/navbar';
-import { Footer } from '@/components/layout/footer';
 import { useToast } from '@/hooks/use-toast';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
@@ -136,9 +134,7 @@ export default function LoginPage() {
 
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navbar />
-      <main className="flex flex-1 items-center justify-center px-4 py-12">
+    <div className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Selamat Datang Kembali</CardTitle>
@@ -211,8 +207,6 @@ export default function LoginPage() {
               </Button>
           </CardFooter>
         </Card>
-      </main>
-      <Footer />
     </div>
   );
 }

@@ -18,8 +18,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
-import { Navbar } from '@/components/layout/navbar';
-import { Footer } from '@/components/layout/footer';
 import { useToast } from '@/hooks/use-toast';
 
 export default function RegistrasiPage() {
@@ -79,6 +77,7 @@ export default function RegistrasiPage() {
         uid: user.uid,
         nama: namaLengkap,
         email: user.email,
+        photoURL: user.photoURL || `https://picsum.photos/seed/${user.uid}/200/200`,
       });
 
       // Create session cookie
@@ -147,6 +146,7 @@ export default function RegistrasiPage() {
             uid: user.uid,
             nama: user.displayName,
             email: user.email,
+            photoURL: user.photoURL || `https://picsum.photos/seed/${user.uid}/200/200`,
         });
 
         const idToken = await user.getIdToken();
@@ -177,9 +177,7 @@ export default function RegistrasiPage() {
 
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navbar />
-      <main className="flex flex-1 items-center justify-center px-4 py-12">
+    <div className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">{googleUser ? `Selesaikan Pendaftaran` : `Buat Akun Baru`}</CardTitle>
@@ -240,7 +238,7 @@ export default function RegistrasiPage() {
                     >
                     Saya setuju dengan{' '}
                     <Link href="#" className="font-medium text-primary hover:underline">
-                        Syarat & Ketentuan
+                        Syarat &amp; Ketentuan
                     </Link>{' '}
                     dan{' '}
                     <Link href="#" className="font-medium text-primary hover:underline">
@@ -273,8 +271,6 @@ export default function RegistrasiPage() {
             </form>
           </CardContent>
         </Card>
-      </main>
-      <Footer />
     </div>
   );
 }
