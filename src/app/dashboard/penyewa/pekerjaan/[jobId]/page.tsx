@@ -15,11 +15,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Calendar, Tag, Star, User, DollarSign, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot, collection, query } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format, fromUnixTime } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { useToast } from '@/hooks/use-toast';
+
 
 // Interface untuk data pekerjaan
 interface Job {
@@ -34,15 +37,16 @@ interface Job {
   budget: number;
   description: string;
   photoUrl?: string;
+  providerId?: string;
 }
 
 // Interface untuk data penawaran
 interface Bid {
-  id: string;
+  id: string; // Ini adalah ID dokumen bid, yang juga merupakan providerId
   providerName: string;
   providerRating: number;
   providerAvatarUrl: string;
-  reviews: number; // Placeholder, bisa ditambahkan nanti
+  reviews: number; 
 }
 
 
@@ -70,6 +74,10 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
   const [bidders, setBidders] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
   const [biddersLoading, setBiddersLoading] = useState(true);
+  const [acceptingBid, setAcceptingBid] = useState<string | null>(null);
+  const { toast } = useToast();
+  const router = useRouter();
+
 
   useEffect(() => {
     if (params.jobId) {
@@ -96,7 +104,7 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
       const bidsQuery = query(collection(db, 'jobs', params.jobId, 'bids'));
       const unsubscribeBids = onSnapshot(bidsQuery, (querySnapshot) => {
         const bidsData = querySnapshot.docs.map(doc => ({
-            id: doc.id,
+            id: doc.id, // ID dokumen bid ini adalah ID dari provider
             ...doc.data()
         })) as Bid[];
         setBidders(bidsData);
@@ -114,6 +122,55 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
       }
     }
   }, [params.jobId]);
+
+  const handleAcceptBid = async (bidder: Bid) => {
+    if (!jobDetails || !bidders.length) return;
+    setAcceptingBid(bidder.id);
+
+    try {
+        const batch = writeBatch(db);
+
+        // 1. Update dokumen pekerjaan utama
+        const jobRef = doc(db, 'jobs', jobDetails.id);
+        batch.update(jobRef, {
+            status: 'DALAM PENGERJAAN',
+            providerId: bidder.id, // ID penawar
+            providerName: bidder.providerName,
+        });
+
+        // 2. Update semua dokumen di sub-koleksi 'bids'
+        bidders.forEach(b => {
+            const bidRef = doc(db, 'jobs', jobDetails.id, 'bids', b.id);
+            if (b.id === bidder.id) {
+                batch.update(bidRef, { status: 'ACCEPTED' });
+            } else {
+                batch.update(bidRef, { status: 'REJECTED' });
+            }
+        });
+
+        // Commit batch
+        await batch.commit();
+
+        toast({
+            title: 'Tawaran Diterima!',
+            description: `Anda telah memilih ${bidder.providerName} untuk mengerjakan proyek ini.`,
+        });
+
+        // Arahkan kembali ke halaman pekerjaan setelah beberapa saat
+        setTimeout(() => router.push('/dashboard/penyewa/pekerjaan'), 2000);
+
+    } catch (error) {
+        console.error("Error accepting bid: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Gagal Menerima Tawaran',
+            description: 'Terjadi kesalahan saat memproses permintaan Anda.'
+        });
+    } finally {
+        setAcceptingBid(null);
+    }
+  };
+
 
   if (loading) {
     return (
@@ -184,11 +241,31 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
 
       {/* Daftar Penawar */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold tracking-tight">Daftar Penawar ({bidders.length})</h2>
+        <h2 className="text-2xl font-bold tracking-tight">
+          {jobDetails.status === 'OPEN' ? `Daftar Penawar (${bidders.length})` : 'Penyedia Jasa Terpilih'}
+        </h2>
          {biddersLoading ? (
-            <div className="flex justify-center items-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <Card>
+                <CardContent className="flex justify-center items-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </CardContent>
+            </Card>
+        ) : (jobDetails.status === 'DALAM PENGERJAAN' || jobDetails.status === 'SELESAI') && jobDetails.providerId ? (
+             <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-4">
+                     <Avatar className="h-16 w-16">
+                        {/* Di dunia nyata, Anda akan mengambil data penyedia dari koleksi 'users' */}
+                        <AvatarImage src={`https://picsum.photos/seed/${jobDetails.providerId}/100/100`} />
+                        <AvatarFallback>{jobDetails.providerName?.charAt(0) ?? 'P'}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <CardTitle>{jobDetails.providerName}</CardTitle>
+                        <CardDescription>Penyedia jasa yang sedang mengerjakan atau telah menyelesaikan pekerjaan ini.</CardDescription>
+                    </div>
+                    </div>
+                </CardHeader>
+            </Card>
         ) : bidders.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {bidders.map((bidder) => (
@@ -210,11 +287,17 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
                     </div>
                 </CardHeader>
                 <CardFooter className="flex gap-2">
-                    <Button variant="outline" className="w-full">
-                    <User className="mr-2 h-4 w-4" />
-                    Lihat Profil
+                    <Button variant="outline" className="w-full" disabled={acceptingBid !== null}>
+                      <User className="mr-2 h-4 w-4" />
+                      Lihat Profil
                     </Button>
-                    <Button className="w-full">Terima Tawaran</Button>
+                    <Button 
+                        className="w-full" 
+                        onClick={() => handleAcceptBid(bidder)} 
+                        disabled={acceptingBid !== null || jobDetails.status !== 'OPEN'}
+                    >
+                        {acceptingBid === bidder.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Terima Tawaran'}
+                    </Button>
                 </CardFooter>
                 </Card>
             ))}
