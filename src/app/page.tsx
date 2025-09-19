@@ -97,7 +97,7 @@ export default function Home() {
   return (
     <>
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 sm:py-24 animate-in fade-in duration-500">
+      <section className="container mx-auto px-4 py-16 sm:py-24">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <div className="space-y-6 text-center lg:text-left">
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-12 duration-500 delay-100">
@@ -134,7 +134,7 @@ export default function Home() {
 
       {/* How it Works Section */}
       <section className="bg-secondary py-20">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-4 text-center animate-in fade-in slide-in-from-bottom-16 duration-700">
           <h2 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">Cara Kerjanya Mudah</h2>
           <p className="mx-auto mb-12 max-w-2xl text-muted-foreground">Hanya dengan tiga langkah sederhana, masalah Anda langsung beres.</p>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -153,7 +153,7 @@ export default function Home() {
 
       {/* Popular Services Section */}
       <section className="py-20">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-4 text-center animate-in fade-in slide-in-from-bottom-16 duration-700">
           <h2 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">Layanan Paling Populer</h2>
           <p className="mx-auto mb-12 max-w-2xl text-muted-foreground">Temukan jasa yang paling banyak dicari oleh pengguna kami.</p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
@@ -180,7 +180,7 @@ export default function Home() {
 
       {/* Testimonials Section */}
       <section className="bg-secondary py-20">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 animate-in fade-in slide-in-from-bottom-16 duration-700">
           <h2 className="mb-2 text-center text-3xl font-bold tracking-tight sm:text-4xl">Apa Kata Mereka?</h2>
           <p className="mx-auto mb-12 max-w-2xl text-center text-muted-foreground">Cerita sukses dari para pengguna setia KelarApp.</p>
           <Carousel
@@ -221,7 +221,7 @@ export default function Home() {
       
       {/* Why Choose Us Section */}
       <section className="py-20">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 animate-in fade-in slide-in-from-bottom-16 duration-700">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Mengapa Memilih KelarApp?</h2>
