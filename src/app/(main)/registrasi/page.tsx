@@ -126,14 +126,15 @@ export default function RegistrasiPage() {
 
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
+      
+      const idToken = await user.getIdToken();
+      await fetch('/api/session/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
 
       if (userDoc.exists()) {
-         const idToken = await user.getIdToken();
-          await fetch('/api/session/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken }),
-          });
         toast({
           title: 'Akun Sudah Terdaftar',
           description: 'Anda sudah memiliki akun, langsung masuk.',
@@ -147,13 +148,6 @@ export default function RegistrasiPage() {
             nama: user.displayName,
             email: user.email,
             photoURL: user.photoURL || `https://picsum.photos/seed/${user.uid}/200/200`,
-        });
-
-        const idToken = await user.getIdToken();
-        await fetch('/api/session/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken }),
         });
 
         toast({
