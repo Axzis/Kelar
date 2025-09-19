@@ -18,7 +18,6 @@ import {
   query,
   where,
   onSnapshot,
-  orderBy,
   Timestamp,
   writeBatch,
   getDocs,
@@ -28,7 +27,7 @@ import { auth, db } from '@/lib/firebase';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 
 interface Notification {
@@ -121,64 +120,61 @@ export default function NotifikasiPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Notifikasi</h1>
-          <p className="text-muted-foreground">
-            Lihat semua pembaruan terkait aktivitas Anda di sini.
-          </p>
-        </div>
-        <Button onClick={handleMarkAllAsRead} disabled={unreadCount === 0}>
-          <CheckCheck className="mr-2 h-4 w-4" />
-          Tandai Semua Terbaca
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Riwayat Notifikasi</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex h-40 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : notifications.length > 0 ? (
-            <div className="flex flex-col">
-              {notifications.map((notif) => (
-                <Link
-                  href={notif.linkTo || '#'}
-                  key={notif.id}
-                  className={cn(
-                    'flex items-center gap-4 p-4 -mx-4 border-b transition-colors hover:bg-muted/50',
-                    !notif.isRead && 'bg-primary/5 hover:bg-primary/10'
-                  )}
-                >
-                  <Avatar className="h-10 w-10 flex-shrink-0 border">
-                    <AvatarImage src={`https://picsum.photos/seed/${notif.id}/100/100`} />
-                    <AvatarFallback><Bell size={20}/></AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 space-y-1">
-                    <p className={cn("text-sm leading-snug", !notif.isRead && "font-semibold")}>{notif.message}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatNotificationTime(notif.createdAt)}
-                    </p>
-                  </div>
-                   {!notif.isRead && (
-                        <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-primary" title="Belum dibaca"></div>
-                    )}
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-20 text-center">
-                <Bell className="h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">Tidak Ada Notifikasi</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Anda akan melihat pembaruan di sini setelah ada aktivitas baru.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between py-4">
+                <div>
+                    <CardTitle>Riwayat Notifikasi</CardTitle>
+                    <CardDescription className="mt-1">
+                        Pembaruan terbaru terkait aktivitas Anda.
+                    </CardDescription>
+                </div>
+                <Button onClick={handleMarkAllAsRead} disabled={unreadCount === 0} size="sm">
+                    <CheckCheck className="mr-2 h-4 w-4" />
+                    Tandai Semua Terbaca
+                </Button>
+            </CardHeader>
+            <CardContent>
+                {loading ? (
+                    <div className="flex h-60 items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : notifications.length > 0 ? (
+                    <div className="flex flex-col -mx-6 -mb-6 border-t">
+                        {notifications.map((notif, index) => (
+                            <Link
+                                href={notif.linkTo || '#'}
+                                key={notif.id}
+                                className={cn(
+                                    'flex items-center gap-4 p-4 transition-colors hover:bg-muted/50',
+                                    !notif.isRead && 'bg-primary/5 hover:bg-primary/10',
+                                    index !== notifications.length - 1 && 'border-b' // Tambah border kecuali untuk item terakhir
+                                )}
+                            >
+                                <Avatar className="h-10 w-10 flex-shrink-0 border">
+                                    {/* Ganti dengan Avatar pengirim notifikasi jika ada */}
+                                    <AvatarFallback><Bell size={20}/></AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 space-y-1">
+                                    <p className={cn("text-sm leading-snug", !notif.isRead && "font-semibold")}>{notif.message}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {formatNotificationTime(notif.createdAt)}
+                                    </p>
+                                </div>
+                                {!notif.isRead && (
+                                    <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-primary" title="Belum dibaca"></div>
+                                )}
+                            </Link>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-20 text-center">
+                        <Bell className="h-12 w-12 text-muted-foreground" />
+                        <h3 className="mt-4 text-lg font-semibold">Tidak Ada Notifikasi</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">Anda akan melihat pembaruan di sini setelah ada aktivitas baru.</p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     </div>
   );
 }
