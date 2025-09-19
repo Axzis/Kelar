@@ -24,9 +24,10 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { format, fromUnixTime, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { fromUnixTime } from 'date-fns';
 
 
 interface Job {
@@ -102,7 +103,7 @@ export default function DashboardPenyediaPage() {
   }, [currentUser]);
 
 
-  const handleBid = async (jobId: string) => {
+  const handleBid = async (job: Job) => {
     if (!currentUser) {
       toast({
         variant: 'destructive',
@@ -112,7 +113,7 @@ export default function DashboardPenyediaPage() {
       return;
     }
 
-    setBiddingJobId(jobId);
+    setBiddingJobId(job.id);
 
     try {
       // 1. Get provider data
@@ -125,7 +126,7 @@ export default function DashboardPenyediaPage() {
       const userData = userDoc.data();
 
       // 2. Create bid document reference
-      const bidDocRef = doc(db, 'jobs', jobId, 'bids', currentUser.uid);
+      const bidDocRef = doc(db, 'jobs', job.id, 'bids', currentUser.uid);
 
       // 3. Denormalize data and set it
       await setDoc(bidDocRef, {
@@ -135,11 +136,12 @@ export default function DashboardPenyediaPage() {
         providerAvatarUrl: userData.photoURL || `https://picsum.photos/seed/${currentUser.uid}/100/100`, // Placeholder avatar
         reviews: 15, // Placeholder review count
         createdAt: Timestamp.now(),
-        status: 'PENDING',
+        jobTitle: job.title, // TAMBAHAN
+        status: 'PENDING', // TAMBAHAN
       });
 
       // 4. Update local state and give feedback
-      setMyBids(prev => ({ ...prev, [jobId]: true }));
+      setMyBids(prev => ({ ...prev, [job.id]: true }));
       toast({
         title: 'Tawaran Terkirim!',
         description: 'Anda telah berhasil memberikan penawaran untuk pekerjaan ini.',
@@ -264,7 +266,7 @@ export default function DashboardPenyediaPage() {
                            <Button
                                 variant={myBids[job.id] ? 'secondary' : 'default'}
                                 size="sm"
-                                onClick={() => handleBid(job.id)}
+                                onClick={() => handleBid(job)}
                                 disabled={myBids[job.id] || biddingJobId === job.id}
                             >
                                 {biddingJobId === job.id ? (
