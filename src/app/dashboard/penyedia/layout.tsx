@@ -23,7 +23,10 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+
 
 const menuItems = [
   { href: '/dashboard/penyedia', label: 'Dashboard', icon: LayoutDashboard },
@@ -39,6 +42,27 @@ export default function DashboardPenyediaLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      await fetch('/api/session/logout', { method: 'POST' });
+      toast({
+        title: 'Logout Berhasil',
+        description: 'Anda telah berhasil keluar.',
+      });
+      router.push('/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Logout Gagal',
+        description: 'Terjadi kesalahan saat mencoba keluar.',
+      });
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -78,12 +102,10 @@ export default function DashboardPenyediaLayout({
                     </Link>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
-                    <Link href="/" passHref>
-                        <SidebarMenuButton tooltip={{children: 'Keluar'}}>
-                            <LogOut />
-                            <span>Keluar</span>
-                        </SidebarMenuButton>
-                    </Link>
+                    <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Keluar'}}>
+                        <LogOut />
+                        <span>Keluar</span>
+                    </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
                      <div className="flex items-center gap-3 p-2">

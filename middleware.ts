@@ -10,46 +10,44 @@ export async function middleware(request: NextRequest) {
 
   const isAuthPage = pathname === '/login' || pathname === '/registrasi';
 
+  // Jika tidak ada session cookie
   if (!sessionCookie) {
-    if (isAuthPage) {
-      return NextResponse.next();
-    }
-    // Jika tidak ada sesi dan mencoba akses halaman dasbor, alihkan ke login
+    // Jika mencoba mengakses halaman dashboard, redirect ke login
     if (pathname.startsWith('/dashboard')) {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(new URL('/login', request.url));
     }
+    // Jika di halaman auth atau publik, lanjutkan
     return NextResponse.next();
   }
 
-  // Jika ada sesi, verifikasi token
+  // Jika ada session cookie, verifikasi
   try {
-    const decodedToken = await auth().verifySessionCookie(sessionCookie, true);
-    const userDoc = await auth().getUser(decodedToken.uid);
-    // Asumsikan peran disimpan dalam custom claims atau Anda perlu fetch dari Firestore
-    // Untuk contoh ini, kita anggap peran ada di custom claims atau kita fetch
-    // Di sini kita tidak punya akses langsung ke firestore, jadi kita akan redirect berdasarkan role dari login page
+    // Verifikasi cookie sesi
+    await auth().verifySessionCookie(sessionCookie, true);
 
+    // Jika pengguna sudah login dan mencoba mengakses halaman login/registrasi,
+    // redirect mereka ke halaman utama atau dashboard
     if (isAuthPage) {
-      // Jika pengguna sudah login dan mencoba akses login/registrasi, redirect ke dashboard
-      // Peran tidak tersedia langsung di sini tanpa query tambahan, jadi kita redirect ke path umum
-      // atau membuat asumsi. Redirect ke beranda adalah opsi aman.
       return NextResponse.redirect(new URL('/', request.url));
     }
-    
+
+    // Jika pengguna sudah login dan mengakses halaman lain, lanjutkan
     return NextResponse.next();
 
   } catch (error) {
-    // Sesi tidak valid, hapus cookie dan alihkan ke login
+    // Jika cookie tidak valid (error verifikasi)
+    // Buat response untuk redirect ke login
     const response = NextResponse.redirect(new URL('/login', request.url));
+    
+    // Hapus cookie yang tidak valid dari browser
     response.cookies.delete('session');
     
+    // Jika path yang diminta adalah dashboard, lakukan redirect dengan cookie yang sudah dihapus
     if (pathname.startsWith('/dashboard')) {
         return response;
     }
-
-    // Jika di halaman lain, cukup hapus cookie dan lanjutkan
+    
+    // Jika path lain, cukup hapus cookie dan lanjutkan ke tujuan
     const nextResponse = NextResponse.next();
     nextResponse.cookies.delete('session');
     return nextResponse;
