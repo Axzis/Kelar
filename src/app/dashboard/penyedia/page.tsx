@@ -1,4 +1,6 @@
 
+'use client';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,49 +18,83 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { GalleryVertical, DollarSign, Star, PackageOpen } from 'lucide-react';
+import { GalleryVertical, DollarSign, Star, PackageOpen, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { format, fromUnixTime, formatDistanceToNow } from 'date-fns';
+import { id } from 'date-fns/locale';
 
-const newJobs = [
-  {
-    id: 'REQ-012',
-    service: 'Butuh Desainer Interior',
-    category: 'Desain',
-    budget: 'Rp 5.000.000 - Rp 10.000.000',
-    postedDate: '2 jam lalu',
-  },
-  {
-    id: 'REQ-011',
-    service: 'Cari Tukang Kebun Harian',
-    category: 'Perawatan Rumah',
-    budget: 'Rp 150.000 / hari',
-    postedDate: '1 hari lalu',
-  },
-  {
-    id: 'REQ-010',
-    service: 'Jasa Angkut Pindahan Apartemen',
-    category: 'Logistik',
-    budget: 'Rp 750.000',
-    postedDate: '3 hari lalu',
-  },
-];
-
+interface Job {
+  id: string;
+  title: string;
+  category: string;
+  budget: number;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+}
 
 export default function DashboardPenyediaPage() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    const q = query(
+      collection(db, 'jobs'),
+      where('status', '==', 'OPEN'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribeFirestore = onSnapshot(q, (querySnapshot) => {
+      const jobsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Job[];
+      setAvailableJobs(jobsData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching available jobs: ", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribeFirestore();
+  }, []);
+
+
+  const formatPostedDate = (date: { seconds: number; nanoseconds: number }) => {
+    if (!date) return '-';
+    return formatDistanceToNow(fromUnixTime(date.seconds), { addSuffix: true, locale: id });
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
             <h1 className="text-3xl font-bold tracking-tight">
-                Halo, Penyedia Jasa!
+                Halo, {currentUser?.displayName || 'Penyedia Jasa'}!
             </h1>
             <p className="text-muted-foreground">
                 Kelola pekerjaan, portofolio, dan lihat statistik kinerja Anda.
             </p>
         </div>
-        <Button size="lg">
-          <GalleryVertical className="mr-2 h-5 w-5" />
-          Kelola Portofolio Anda
+        <Button size="lg" asChild>
+          <Link href="/dashboard/penyedia/portofolio">
+            <GalleryVertical className="mr-2 h-5 w-5" />
+            Kelola Portofolio Anda
+          </Link>
         </Button>
       </div>
 
@@ -71,9 +107,9 @@ export default function DashboardPenyediaPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Rp 12.550.000</div>
+            <div className="text-2xl font-bold">Rp 0</div>
             <p className="text-xs text-muted-foreground">
-              +20.1% dari bulan lalu
+              Data belum tersedia
             </p>
           </CardContent>
         </Card>
@@ -85,9 +121,9 @@ export default function DashboardPenyediaPage() {
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4.9/5.0</div>
+            <div className="text-2xl font-bold">N/A</div>
             <p className="text-xs text-muted-foreground">
-              Dari 52 ulasan pelanggan
+              Belum ada ulasan
             </p>
           </CardContent>
         </Card>
@@ -99,9 +135,9 @@ export default function DashboardPenyediaPage() {
             <PackageOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">
-              Menunggu respon dari calon penyewa.
+                Data belum tersedia
             </p>
           </CardContent>
         </Card>
@@ -111,35 +147,49 @@ export default function DashboardPenyediaPage() {
         <Card>
           <CardHeader>
             <CardTitle>Daftar Pekerjaan Baru yang Tersedia</CardTitle>
-            <CardDescription>Berikut adalah permintaan jasa terbaru yang sesuai dengan keahlian Anda.</CardDescription>
+            <CardDescription>Berikut adalah permintaan jasa terbaru yang bisa Anda ambil.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Pekerjaan</TableHead>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead>Anggaran</TableHead>
-                  <TableHead>Diposting</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {newJobs.map((job) => (
-                  <TableRow key={job.id}>
-                    <TableCell className="font-medium">{job.service}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{job.category}</Badge>
-                    </TableCell>
-                    <TableCell>{job.budget}</TableCell>
-                    <TableCell>{job.postedDate}</TableCell>
-                    <TableCell className="text-right">
-                        <Button variant="secondary" size="sm">Lihat Detail</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            {loading ? (
+                 <div className="flex justify-center items-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                 </div>
+             ) : (
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>Pekerjaan</TableHead>
+                    <TableHead>Kategori</TableHead>
+                    <TableHead>Anggaran</TableHead>
+                    <TableHead>Diposting</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {availableJobs.length > 0 ? availableJobs.map((job) => (
+                    <TableRow key={job.id}>
+                        <TableCell className="font-medium">{job.title}</TableCell>
+                        <TableCell>
+                        <Badge variant="outline">{job.category}</Badge>
+                        </TableCell>
+                        <TableCell>
+                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(job.budget)}
+                        </TableCell>
+                        <TableCell>{formatPostedDate(job.createdAt)}</TableCell>
+                        <TableCell className="text-right">
+                            <Button variant="secondary" size="sm">Lihat Detail</Button>
+                        </TableCell>
+                    </TableRow>
+                    )) : (
+                         <TableRow>
+                            <TableCell colSpan={5} className="text-center h-24">
+                                Saat ini belum ada pekerjaan yang tersedia.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+                </Table>
+             )}
           </CardContent>
         </Card>
       </div>
