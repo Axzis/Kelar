@@ -1,3 +1,6 @@
+
+'use client'
+
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
@@ -114,7 +117,7 @@ export default function Home() {
             <AnimateOnScroll animationClassName="animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
               <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start">
                 <Button asChild size="lg">
-                  <Link href="/#layanan-populer" className="font-bold">Saya butuh Jasa</Link>
+                  <Link href="/dashboard/penyewa" className="font-bold">Saya butuh Jasa</Link>
                 </Button>
                 <Button asChild size="lg" variant="secondary">
                   <Link href="/" className="font-bold">Saya tawarkan Jasa</Link>

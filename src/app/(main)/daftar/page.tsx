@@ -1,4 +1,5 @@
 
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -14,7 +15,7 @@ import Link from 'next/link';
 
 export default function DaftarPage() {
   return (
-    <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center bg-gray-100 dark:bg-gray-900 px-4 py-12">
+    <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Buat Akun Baru</CardTitle>

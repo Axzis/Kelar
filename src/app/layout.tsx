@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Navbar } from '@/components/layout/navbar';
-import { Footer } from '@/components/layout/footer';
+import { Toaster } from '@/components/ui/toaster';
+
 
 export const metadata: Metadata = {
   title: 'KelarApp',
@@ -23,12 +23,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased">
-        <div className="flex min-h-screen flex-col">
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
+      <body className="font-body antialiased bg-background">
+          {children}
+          <Toaster />
       </body>
     </html>
   );
