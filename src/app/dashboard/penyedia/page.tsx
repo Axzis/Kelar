@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { GalleryVertical, DollarSign, Star, PackageOpen, Loader2, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, getDoc, setDoc, Timestamp, collectionGroup, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, setDoc, Timestamp, collectionGroup, orderBy, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -35,6 +35,7 @@ interface Job {
   title: string;
   category: string;
   budget: number;
+  status: string;
   createdAt: {
     seconds: number;
     nanoseconds: number;
@@ -90,12 +91,11 @@ export default function DashboardPenyediaPage() {
       return;
     };
     
-    // === Fetch Available Jobs ===
+    // === Fetch All Jobs, then filter client-side for available jobs and my bids ===
     setLoading(true);
-    const jobsQuery = query(
-      collection(db, 'jobs'),
-      where('status', '==', 'OPEN')
-    );
+    setMyBidsLoading(true);
+
+    const jobsQuery = query(collection(db, 'jobs'));
 
     const unsubscribeJobs = onSnapshot(jobsQuery, async (querySnapshot) => {
       const jobsData = querySnapshot.docs.map(doc => ({
@@ -104,51 +104,49 @@ export default function DashboardPenyediaPage() {
       })) as Job[];
       
       const sortedJobs = jobsData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-      setAvailableJobs(sortedJobs);
+      
+      // Filter for available jobs
+      const openJobs = sortedJobs.filter(job => job.status === 'OPEN');
+      setAvailableJobs(openJobs);
 
       const bidStatus: BidStatus = {};
+      const bidsData: Bid[] = [];
+
       for (const job of sortedJobs) {
         const bidDocRef = doc(db, 'jobs', job.id, 'bids', currentUser.uid);
         const bidDoc = await getDoc(bidDocRef);
-        bidStatus[job.id] = bidDoc.exists();
+        
+        const hasBid = bidDoc.exists();
+        bidStatus[job.id] = hasBid;
+
+        if (hasBid) {
+            bidsData.push({
+                id: bidDoc.id,
+                ...bidDoc.data()
+            } as Bid);
+        }
       }
+
+      const sortedBids = bidsData.sort((a, b) => {
+          const dateA = a.createdAt ? fromUnixTime(a.createdAt.seconds) : new Date(0);
+          const dateB = b.createdAt ? fromUnixTime(b.createdAt.seconds) : new Date(0);
+          return dateB.getTime() - dateA.getTime();
+      });
+      
+      setMyBids(sortedBids);
       setBiddingStatus(bidStatus);
       setLoading(false);
+      setMyBidsLoading(false);
+
     }, (error) => {
-      console.error("Error fetching available jobs: ", error);
+      console.error("Error fetching jobs: ", error);
       setLoading(false);
-    });
-
-    // === Fetch My Bids using Collection Group Query ===
-    setMyBidsLoading(true);
-    const myBidsQuery = query(
-        collectionGroup(db, 'bids'),
-        where('providerId', '==', currentUser.uid)
-    );
-
-    const unsubscribeBids = onSnapshot(myBidsQuery, (querySnapshot) => {
-        const bidsData = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        })) as Bid[];
-
-        const sortedBids = bidsData.sort((a, b) => {
-            const dateA = a.createdAt ? fromUnixTime(a.createdAt.seconds) : new Date(0);
-            const dateB = b.createdAt ? fromUnixTime(b.createdAt.seconds) : new Date(0);
-            return dateB.getTime() - dateA.getTime();
-        });
-
-        setMyBids(sortedBids);
-        setMyBidsLoading(false);
-    }, (error) => {
-        console.error("Error fetching my bids: ", error);
-        setMyBidsLoading(false);
+      setMyBidsLoading(false);
     });
 
 
     return () => {
       unsubscribeJobs();
-      unsubscribeBids();
     };
   }, [currentUser]);
 
@@ -389,6 +387,8 @@ export default function DashboardPenyediaPage() {
       </div>
     </div>
   );
+
+    
 
     
 
