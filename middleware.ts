@@ -1,3 +1,4 @@
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { initAdmin } from '@/lib/firebase-admin';
 import { auth } from 'firebase-admin';
@@ -42,8 +43,8 @@ export async function middleware(request: NextRequest) {
     // Hapus cookie yang tidak valid dari browser
     response.cookies.delete('session');
     
-    // Jika path yang diminta adalah dashboard, lakukan redirect dengan cookie yang sudah dihapus
-    if (pathname.startsWith('/dashboard')) {
+    // Jika path yang diminta adalah dashboard atau halaman auth, lakukan redirect dengan cookie yang sudah dihapus
+    if (pathname.startsWith('/dashboard') || isAuthPage) {
         return response;
     }
     
