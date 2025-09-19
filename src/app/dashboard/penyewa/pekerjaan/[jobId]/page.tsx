@@ -13,22 +13,49 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Calendar, Tag, Star, User, DollarSign } from 'lucide-react';
+import { ArrowLeft, Calendar, Tag, Star, User, DollarSign, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { format, fromUnixTime } from 'date-fns';
+import { id } from 'date-fns/locale';
 
-// Data placeholder untuk detail pekerjaan
-const jobDetails = {
-  id: 'j1',
-  title: 'Perbaikan Atap Bocor Mendesak',
-  category: 'Jasa Tukang',
-  status: 'OPEN',
-  createdAt: '15 Juli 2024',
-  budget: 750000,
-  description:
-    'Atap rumah saya di bagian gudang mengalami kebocoran yang cukup parah saat hujan deras terakhir. Saya membutuhkan tukang yang berpengalaman untuk segera memeriksanya, menemukan sumber bocor, dan melakukan perbaikan permanen. Material yang dibutuhkan bisa didiskusikan lebih lanjut, namun saya berharap perbaikan bisa selesai dalam 1-2 hari kerja. Area yang perlu diperbaiki sekitar 2x3 meter.',
+// Interface untuk data pekerjaan
+interface Job {
+  id: string;
+  title: string;
+  category: string;
+  status: 'SELESAI' | 'DALAM PENGERJAAN' | 'MENUNGGU PEMBAYARAN' | 'DIBATALKAN' | 'OPEN';
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+  budget: number;
+  description: string;
+  photoUrl?: string;
+}
+
+// Objek untuk memetakan status pekerjaan ke varian warna Badge
+const statusVariant: { [key in Job['status']]: "default" | "secondary" | "destructive" | "outline" } = {
+  'SELESAI': 'default',
+  'DALAM PENGERJAAN': 'secondary',
+  'MENUNGGU PEMBAYARAN': 'outline',
+  'DIBATALKAN': 'destructive',
+  'OPEN': 'secondary',
 };
 
-// Data placeholder untuk daftar penawar
+// Objek untuk memetakan status pekerjaan ke teks yang lebih ramah pengguna
+const statusDisplay: { [key in Job['status']]: string } = {
+    'SELESAI': 'Selesai',
+    'DALAM PENGERJAAN': 'Dalam Pengerjaan',
+    'MENUNGGU PEMBAYARAN': 'Menunggu Pembayaran',
+    'DIBATALKAN': 'Dibatalkan',
+    'OPEN': 'Mencari Penyedia',
+};
+
+
+// Data placeholder untuk daftar penawar (akan diganti nanti)
 const bidders = [
   {
     id: 'p1',
@@ -54,7 +81,53 @@ const bidders = [
 ];
 
 export default function JobDetailPage({ params }: { params: { jobId: string } }) {
-  // Nanti kita akan menggunakan params.jobId untuk mengambil data asli
+  const [jobDetails, setJobDetails] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (params.jobId) {
+      setLoading(true);
+      const jobDocRef = doc(db, 'jobs', params.jobId);
+      
+      const unsubscribe = onSnapshot(jobDocRef, (doc) => {
+        if (doc.exists()) {
+          setJobDetails({ id: doc.id, ...doc.data() } as Job);
+        } else {
+          console.error("No such document!");
+          setJobDetails(null);
+        }
+        setLoading(false);
+      }, (error) => {
+        console.error("Error fetching job details: ", error);
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
+    }
+  }, [params.jobId]);
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!jobDetails) {
+    return (
+      <div className="text-center">
+        <h2 className="text-xl font-semibold">Pekerjaan tidak ditemukan</h2>
+        <p className="text-muted-foreground">Pekerjaan yang Anda cari mungkin telah dihapus atau tidak ada.</p>
+        <Button asChild className="mt-4">
+          <Link href="/dashboard/penyewa/pekerjaan">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Kembali ke Daftar Pekerjaan
+          </Link>
+        </Button>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-8">
@@ -80,23 +153,23 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
                     </span>
                     <span className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        Dibuat pada {jobDetails.createdAt}
+                        Dibuat pada {jobDetails.createdAt ? format(fromUnixTime(jobDetails.createdAt.seconds), 'd MMMM yyyy', { locale: id }) : '-'}
                     </span>
                      <span className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
-                        Anggaran: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(jobDetails.budget)}
+                        Anggaran: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(jobDetails.budget)}
                     </span>
                 </CardDescription>
             </div>
-            <Badge variant={jobDetails.status === 'OPEN' ? 'secondary' : 'default'}>
-              {jobDetails.status}
+            <Badge variant={statusVariant[jobDetails.status] || 'default'}>
+              {statusDisplay[jobDetails.status] || 'Status Tidak Diketahui'}
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
             <Separator className="my-4" />
             <h3 className="text-lg font-semibold mb-2">Deskripsi Lengkap</h3>
-            <p className="text-muted-foreground">{jobDetails.description}</p>
+            <p className="text-muted-foreground whitespace-pre-wrap">{jobDetails.description}</p>
         </CardContent>
       </Card>
 
@@ -132,6 +205,13 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
             </Card>
           ))}
         </div>
+         {bidders.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              Belum ada penyedia jasa yang memberikan penawaran untuk pekerjaan ini.
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
