@@ -1,4 +1,6 @@
 
+'use client';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -18,6 +20,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Activity, DollarSign } from 'lucide-react';
 import Link from 'next/link';
+import { CreateRequestModal } from '@/components/dashboard/penyewa/create-request-modal';
+import { useState } from 'react';
 
 const recentJobs = [
   {
@@ -63,6 +67,8 @@ const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | 
 
 
 export default function DashboardPenyewaPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -74,10 +80,12 @@ export default function DashboardPenyewaPage() {
                 Lihat ringkasan dan kelola semua pekerjaan Anda di sini.
             </p>
         </div>
-        <Button size="lg">
-          <PlusCircle className="mr-2 h-5 w-5" />
-          Buat Permintaan Jasa Baru
-        </Button>
+        <CreateRequestModal isOpen={isModalOpen} onOpenChange={setIsModalOpen}>
+            <Button size="lg" onClick={() => setIsModalOpen(true)}>
+                <PlusCircle className="mr-2 h-5 w-5" />
+                Buat Permintaan Jasa Baru
+            </Button>
+        </CreateRequestModal>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
