@@ -21,6 +21,7 @@ import {
   LogOut,
   Sparkles,
   ArrowRightLeft,
+  Bell,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,6 +35,7 @@ const menuItems = [
   { href: '/dashboard/penyedia', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/penyedia/pekerjaan', label: 'Pekerjaan Tersedia', icon: Briefcase },
   { href: '/dashboard/penyedia/tawaran', label: 'Tawaran Saya', icon: Sparkles },
+  { href: '/dashboard/notifikasi', label: 'Notifikasi', icon: Bell },
   { href: '/dashboard/penyedia/portofolio', label: 'Portofolio', icon: GalleryVertical },
   { href: '/dashboard/penyedia/profil', label: 'Profil Saya', icon: User },
 ];

@@ -20,6 +20,7 @@ import {
   Settings,
   LogOut,
   ArrowRightLeft,
+  Bell,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -31,6 +32,7 @@ import { Button } from '@/components/ui/button';
 const menuItems = [
   { href: '/dashboard/penyewa', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/penyewa/pekerjaan', label: 'Pekerjaan Saya', icon: Briefcase },
+  { href: '/dashboard/notifikasi', label: 'Notifikasi', icon: Bell },
   { href: '/dashboard/penyewa/pembayaran', label: 'Pembayaran', icon: CreditCard },
   { href: '/dashboard/penyewa/profil', label: 'Profil Saya', icon: User },
 ];
