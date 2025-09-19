@@ -12,6 +12,7 @@ import { Loader2, Star, User, Building, Home, MessageSquare } from 'lucide-react
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { AnimateOnScroll } from '@/components/ui/animate-on-scroll';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 
 
 interface Profile {
@@ -56,6 +57,7 @@ export default function ProviderProfilePage({ params }: { params: { providerId: 
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     const fetchProviderData = async () => {
@@ -126,6 +128,7 @@ export default function ProviderProfilePage({ params }: { params: { providerId: 
   if (!profile) return null;
 
   return (
+    <>
     <div className="bg-secondary">
       <div className="container mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="space-y-12">
@@ -148,7 +151,7 @@ export default function ProviderProfilePage({ params }: { params: { providerId: 
                         <span>(15 Ulasan)</span>
                     </div>
                      <div className="mt-4">
-                        <Button>
+                        <Button onClick={() => setIsChatOpen(true)}>
                             <MessageSquare className="mr-2 h-4 w-4" /> Hubungi Saya
                         </Button>
                     </div>
@@ -270,6 +273,8 @@ export default function ProviderProfilePage({ params }: { params: { providerId: 
         </div>
       </div>
     </div>
+    <ChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+    </>
   );
 }
 
