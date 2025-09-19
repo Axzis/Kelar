@@ -92,7 +92,7 @@ export default function DashboardPenyediaLayout({
               <SidebarMenuItem key={item.label}>
                 <Link href={item.href} passHref>
                   <SidebarMenuButton
-                    isActive={pathname === item.href}
+                    isActive={pathname === item.href || (item.href === '/dashboard/notifikasi' && pathname.startsWith('/dashboard/notifikasi'))}
                     tooltip={{ children: item.label }}
                   >
                     <item.icon />
