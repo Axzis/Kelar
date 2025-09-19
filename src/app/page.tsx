@@ -100,7 +100,7 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16 sm:py-24">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <div className="space-y-6 text-center lg:text-left">
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-12 duration-500 delay-100">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-12 duration-700 delay-100">
               <h1 className="font-headline text-4xl font-bold tracking-tighter text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
                 Selesaikan Semua Urusanmu, <span className="text-primary">Kelar-in Aja!</span>
               </h1>
@@ -108,16 +108,16 @@ export default function Home() {
                 Platform terpadu untuk semua kebutuhan jasa Anda. Dari perbaikan rumah hingga pengembangan skill, temukan profesional terbaik di sini.
               </p>
             </div>
-            <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start animate-in fade-in slide-in-from-bottom-12 duration-500 delay-200">
+            <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start animate-in fade-in slide-in-from-bottom-12 duration-700 delay-200">
               <Button asChild size="lg">
-                <Link href="/cari-jasa" className="font-bold">Saya butuh Jasa</Link>
+                <Link href="/" className="font-bold">Saya butuh Jasa</Link>
               </Button>
               <Button asChild size="lg" variant="secondary">
-                <Link href="/tawarkan-jasa" className="font-bold">Saya tawarkan Jasa</Link>
+                <Link href="/" className="font-bold">Saya tawarkan Jasa</Link>
               </Button>
             </div>
           </div>
-          <div className="flex items-center justify-center animate-in fade-in zoom-in-90 duration-500 delay-300">
+          <div className="flex items-center justify-center animate-in fade-in zoom-in-90 duration-700 delay-300">
             {heroImage && (
               <Image
                 src={heroImage.imageUrl}
@@ -262,7 +262,7 @@ export default function Home() {
             <p className="mt-2 text-lg text-primary-foreground/90">Jadilah mitra kami dan dapatkan penghasilan tambahan dengan keahlian Anda.</p>
           </div>
           <Button asChild size="lg" variant="secondary" className="flex-shrink-0 bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-            <Link href="/tawarkan-jasa" className="font-bold">Daftar Jadi Mitra</Link>
+            <Link href="/" className="font-bold">Daftar Jadi Mitra</Link>
           </Button>
         </div>
       </section>

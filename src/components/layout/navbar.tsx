@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const navLinks = [
   { href: '/', label: 'Beranda' },
-  { href: '/cari-jasa', label: 'Cari Jasa' },
+  { href: '/', label: 'Cari Jasa' },
 ];
 
 export function Navbar() {
@@ -36,10 +36,10 @@ export function Navbar() {
 
         <div className="hidden items-center gap-4 md:flex">
           <Button asChild variant="outline">
-            <Link href="/daftar" className="font-bold">Daftar</Link>
+            <Link href="/" className="font-bold">Daftar</Link>
           </Button>
           <Button asChild>
-            <Link href="/masuk" className="font-bold">Masuk</Link>
+            <Link href="/" className="font-bold">Masuk</Link>
           </Button>
         </div>
 
@@ -76,10 +76,10 @@ export function Navbar() {
                 </nav>
                 <div className="mt-auto flex flex-col gap-4">
                   <Button asChild variant="outline" size="lg">
-                    <Link href="/daftar" className="font-bold">Daftar</Link>
+                    <Link href="/" className="font-bold">Daftar</Link>
                   </Button>
                   <Button asChild size="lg">
-                    <Link href="/masuk" className="font-bold">Masuk</Link>
+                    <Link href="/" className="font-bold">Masuk</Link>
                   </Button>
                 </div>
               </div>
