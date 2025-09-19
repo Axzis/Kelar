@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Calendar, Tag, Star, User, DollarSign, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { doc, onSnapshot, collection, query, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format, fromUnixTime } from 'date-fns';
@@ -78,7 +78,7 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
   const [acceptingBid, setAcceptingBid] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
-  const { jobId } = params;
+  const { jobId } = use(params);
 
 
   useEffect(() => {
