@@ -120,7 +120,7 @@ export default function Home() {
                   <Link href="/dashboard/penyewa" className="font-bold">Saya butuh Jasa</Link>
                 </Button>
                 <Button asChild size="lg" variant="secondary">
-                  <Link href="/" className="font-bold">Saya tawarkan Jasa</Link>
+                  <Link href="/dashboard/penyedia" className="font-bold">Saya tawarkan Jasa</Link>
                 </Button>
               </div>
             </AnimateOnScroll>
