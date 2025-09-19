@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Calendar, Tag, Star, User, DollarSign, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format, fromUnixTime } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -86,7 +86,6 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
 
   useEffect(() => {
     if (params.jobId) {
-      setLoading(true);
       const jobDocRef = doc(db, 'jobs', params.jobId);
       
       const unsubscribe = onSnapshot(jobDocRef, (doc) => {
@@ -94,13 +93,7 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
           const data = doc.data();
           setJobDetails({ 
             id: doc.id,
-            title: data.title,
-            category: data.category,
-            status: data.status,
-            createdAt: data.createdAt,
-            budget: data.budget,
-            description: data.description,
-            photoUrl: data.photoUrl,
+            ...data,
            } as Job);
         } else {
           console.error("No such document!");
