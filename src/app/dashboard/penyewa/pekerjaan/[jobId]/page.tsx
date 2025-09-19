@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Calendar, Tag, Star, User, DollarSign, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format, fromUnixTime } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -91,7 +91,17 @@ export default function JobDetailPage({ params }: { params: { jobId: string } })
       
       const unsubscribe = onSnapshot(jobDocRef, (doc) => {
         if (doc.exists()) {
-          setJobDetails({ id: doc.id, ...doc.data() } as Job);
+          const data = doc.data();
+          setJobDetails({ 
+            id: doc.id,
+            title: data.title,
+            category: data.category,
+            status: data.status,
+            createdAt: data.createdAt,
+            budget: data.budget,
+            description: data.description,
+            photoUrl: data.photoUrl,
+           } as Job);
         } else {
           console.error("No such document!");
           setJobDetails(null);
