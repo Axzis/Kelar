@@ -22,7 +22,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
-const guestNavLinks = [];
+const guestNavLinks = [
+    // { href: '#layanan-populer', label: 'Cari Jasa' },
+    // { href: '#tentang-kami', label: 'Tentang Kami' },
+];
 
 const loggedInNavLinks = [
     { href: '/dashboard/penyewa', label: 'Dashboard' },
@@ -38,6 +41,7 @@ export function Navbar() {
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setLoading(true);
       setUser(currentUser);
       if (currentUser) {
         // Fetch additional user data from Firestore
@@ -101,8 +105,9 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-            {!loading && (
-                 user ? (
+            {loading ? (
+                <div className="h-10 w-28 animate-pulse rounded-md bg-muted" />
+            ) : user ? (
                     <>
                         <NotificationBell />
                         <DropdownMenu>
@@ -148,7 +153,7 @@ export function Navbar() {
                         </Button>
                     </div>
                  )
-            )}
+            }
         </div>
 
         <div className="md:hidden">
