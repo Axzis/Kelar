@@ -114,7 +114,7 @@ export default function Home() {
             <AnimateOnScroll animationClassName="animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
               <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start">
                 <Button asChild size="lg">
-                  <Link href="/cari-jasa" className="font-bold">Saya butuh Jasa</Link>
+                  <Link href="/#layanan-populer" className="font-bold">Saya butuh Jasa</Link>
                 </Button>
                 <Button asChild size="lg" variant="secondary">
                   <Link href="/" className="font-bold">Saya tawarkan Jasa</Link>
@@ -159,7 +159,7 @@ export default function Home() {
       </section>
 
       {/* Popular Services Section */}
-      <section className="py-20">
+      <section id="layanan-populer" className="py-20 scroll-mt-20">
         <AnimateOnScroll animationClassName="animate-in fade-in slide-in-from-bottom-16 duration-1000" className="container mx-auto px-4 text-center">
           <h2 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">Layanan Paling Populer</h2>
           <p className="mx-auto mb-12 max-w-2xl text-muted-foreground">Temukan jasa yang paling banyak dicari oleh pengguna kami.</p>

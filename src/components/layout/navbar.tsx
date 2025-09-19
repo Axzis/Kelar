@@ -9,7 +9,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const navLinks = [
   { href: '/', label: 'Beranda' },
-  { href: '/cari-jasa', label: 'Cari Jasa' },
 ];
 
 export function Navbar() {
