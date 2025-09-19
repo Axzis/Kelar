@@ -150,22 +150,22 @@ export default function NotifikasiPage() {
                   href={notif.linkTo || '#'}
                   key={notif.id}
                   className={cn(
-                    'flex items-start gap-4 p-4 -mx-6 border-b transition-colors hover:bg-muted/50',
+                    'flex items-center gap-4 p-4 -mx-4 border-b transition-colors hover:bg-muted/50',
                     !notif.isRead && 'bg-primary/5 hover:bg-primary/10'
                   )}
                 >
-                  <Avatar className="h-10 w-10 mt-1 border">
+                  <Avatar className="h-10 w-10 flex-shrink-0 border">
                     <AvatarImage src={`https://picsum.photos/seed/${notif.id}/100/100`} />
                     <AvatarFallback><Bell size={20}/></AvatarFallback>
                   </Avatar>
-                  <div className="flex-1">
-                    <p className={cn("text-sm", !notif.isRead && "font-semibold")}>{notif.message}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                  <div className="flex-1 space-y-1">
+                    <p className={cn("text-sm leading-snug", !notif.isRead && "font-semibold")}>{notif.message}</p>
+                    <p className="text-xs text-muted-foreground">
                       {formatNotificationTime(notif.createdAt)}
                     </p>
                   </div>
                    {!notif.isRead && (
-                        <div className="mt-1 h-3 w-3 rounded-full bg-primary" title="Belum dibaca"></div>
+                        <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-primary" title="Belum dibaca"></div>
                     )}
                 </Link>
               ))}
