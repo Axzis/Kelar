@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -74,6 +75,7 @@ export default function DashboardPenyewaPage() {
       const q = query(
         collection(db, 'jobs'),
         where('hirerId', '==', currentUser.uid)
+        // orderBy('createdAt', 'desc') // Temporarily removed to avoid index error
       );
 
       const unsubscribeFirestore = onSnapshot(q, (querySnapshot) => {
@@ -82,6 +84,7 @@ export default function DashboardPenyewaPage() {
           ...doc.data(),
         })) as Job[];
         
+        // Sorting manually because of Firestore index issue
         jobsData.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
 
         setJobs(jobsData);
@@ -93,20 +96,19 @@ export default function DashboardPenyewaPage() {
 
       return () => unsubscribeFirestore();
     } else {
+      // No user logged in
       setJobs([]);
       setLoading(false);
     }
   }, [currentUser]);
 
-  const activeJobsCount = useMemo(() => 
-    jobs.filter(job => job.status === 'DALAM PENGERJAAN' || job.status === 'MENUNGGU PEMBAYARAN').length,
-    [jobs]
-  );
+  const activeJobsCount = useMemo(() => {
+    return jobs.filter(job => job.status === 'DALAM PENGERJAAN' || job.status === 'MENUNGGU PEMBAYARAN').length;
+  }, [jobs]);
 
-  const totalSpending = useMemo(() => 
-    jobs.filter(job => job.status === 'SELESAI').reduce((sum, job) => sum + job.budget, 0),
-    [jobs]
-  );
+  const totalSpending = useMemo(() => {
+    return jobs.filter(job => job.status === 'SELESAI').reduce((sum, job) => sum + job.budget, 0);
+  }, [jobs]);
 
   return (
     <div className="space-y-8">
