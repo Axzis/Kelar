@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -21,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Activity, DollarSign, Loader2 } from 'lucide-react';
 import { CreateRequestModal } from '@/components/dashboard/penyewa/create-request-modal';
 import { useState, useEffect, useMemo } from 'react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { format, fromUnixTime } from 'date-fns';
