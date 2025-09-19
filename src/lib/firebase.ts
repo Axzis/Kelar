@@ -12,7 +12,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCz1yKoluYUgXs6-1HNE97sdBEMeTYahNg",
   authDomain: "kelar-67887.firebaseapp.com",
   projectId: "kelar-67887",
-  storageBucket: "kelar-67887.appspot.com",
+  storageBucket: "kelar-67887.firebasestorage.app",
   messagingSenderId: "906875295669",
   appId: "1:906875295669:web:039e4262931705135b2bfc"
 };
