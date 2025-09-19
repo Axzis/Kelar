@@ -20,10 +20,10 @@ export default function Home() {
           </div>
           <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start animate-in fade-in slide-in-from-bottom-12 duration-500 delay-200">
             <Button asChild size="lg">
-              <Link href="/cari-jasa">Saya butuh Jasa</Link>
+              <Link href="/cari-jasa" className="font-bold">Saya butuh Jasa</Link>
             </Button>
             <Button asChild size="lg" variant="secondary">
-              <Link href="/tawarkan-jasa">Saya tawarkan Jasa</Link>
+              <Link href="/tawarkan-jasa" className="font-bold">Saya tawarkan Jasa</Link>
             </Button>
           </div>
         </div>

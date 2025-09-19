@@ -27,7 +27,7 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
             >
               {link.label}
             </Link>
@@ -36,10 +36,10 @@ export function Navbar() {
 
         <div className="hidden items-center gap-4 md:flex">
           <Button asChild variant="outline">
-            <Link href="/daftar">Daftar</Link>
+            <Link href="/daftar" className="font-bold">Daftar</Link>
           </Button>
           <Button asChild>
-            <Link href="/masuk">Masuk</Link>
+            <Link href="/masuk" className="font-bold">Masuk</Link>
           </Button>
         </div>
 
@@ -68,7 +68,7 @@ export function Navbar() {
                       key={link.href}
                       href={link.href}
                       onClick={() => setIsMenuOpen(false)}
-                      className="text-lg font-medium text-foreground transition-colors hover:text-primary"
+                      className="text-lg font-bold text-foreground transition-colors hover:text-primary"
                     >
                       {link.label}
                     </Link>
@@ -76,10 +76,10 @@ export function Navbar() {
                 </nav>
                 <div className="mt-auto flex flex-col gap-4">
                   <Button asChild variant="outline" size="lg">
-                    <Link href="/daftar">Daftar</Link>
+                    <Link href="/daftar" className="font-bold">Daftar</Link>
                   </Button>
                   <Button asChild size="lg">
-                    <Link href="/masuk">Masuk</Link>
+                    <Link href="/masuk" className="font-bold">Masuk</Link>
                   </Button>
                 </div>
               </div>
