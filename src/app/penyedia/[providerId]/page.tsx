@@ -3,12 +3,13 @@
 
 import { useEffect, useState } from 'react';
 import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Star, User, Building, Home, MessageSquare } from 'lucide-react';
+import { Loader2, Star, User as UserIcon, Building, Home, MessageSquare } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { AnimateOnScroll } from '@/components/ui/animate-on-scroll';
@@ -55,11 +56,16 @@ const staticReviews = [
 export default function ProviderProfilePage({ params }: { params: { providerId: string } }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+
     const fetchProviderData = async () => {
       if (!params.providerId) {
         setError("Provider ID tidak valid.");
@@ -101,7 +107,13 @@ export default function ProviderProfilePage({ params }: { params: { providerId: 
     };
 
     fetchProviderData();
+    return () => unsubscribeAuth();
   }, [params.providerId]);
+  
+  const generateChatId = (uid1: string, uid2: string) => {
+    return [uid1, uid2].sort().join('_');
+  };
+
 
   if (loading) {
     return (
@@ -151,7 +163,7 @@ export default function ProviderProfilePage({ params }: { params: { providerId: 
                         <span>(15 Ulasan)</span>
                     </div>
                      <div className="mt-4">
-                        <Button onClick={() => setIsChatOpen(true)}>
+                        <Button onClick={() => setIsChatOpen(true)} disabled={!currentUser || currentUser.uid === params.providerId}>
                             <MessageSquare className="mr-2 h-4 w-4" /> Hubungi Saya
                         </Button>
                     </div>
@@ -237,7 +249,7 @@ export default function ProviderProfilePage({ params }: { params: { providerId: 
                         <Card>
                             <CardHeader>
                                 <CardTitle>Ulasan Klien</CardTitle>
-                            </CardHeader>
+                            </Header>
                             <CardContent className="space-y-6">
                                 {staticReviews.map((review, index) => (
                                 <div key={review.id}>
@@ -273,9 +285,19 @@ export default function ProviderProfilePage({ params }: { params: { providerId: 
         </div>
       </div>
     </div>
-    <ChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+    {currentUser && profile && (
+        <ChatPanel
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+            chatId={generateChatId(currentUser.uid, params.providerId)}
+            currentUserId={currentUser.uid}
+            recipient={{
+                id: params.providerId,
+                name: profile.nama,
+                avatarUrl: profile.photoURL,
+            }}
+        />
+    )}
     </>
   );
 }
-
-    
